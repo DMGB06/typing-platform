@@ -1,0 +1,205 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum CreatedBy {
+  ADMIN
+  AI
+}
+
+// ============================================
+// CATÁLOGOS (administrador puede agregar)
+// ============================================
+
+model Difficulty {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  orderIndex  Int       @default(0) @map("order_index")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relaciones
+  texts Text[]
+  stats UserStatsByDifficulty[]
+
+  @@map("difficulties")
+}
+
+model TextType {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relaciones
+  texts Text[]
+
+  @@map("text_types")
+}
+
+model Language {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique
+  name      String
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relaciones
+  texts Text[]
+
+  @@map("languages")
+}
+
+// ============================================
+// USUARIOS
+// ============================================
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         UserRole  @default(USER)
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relaciones
+  sessions    TypingSession[]
+  stats       UserStatsByDifficulty[]
+  textHistory UserTextHistory[]
+
+  @@map("users")
+}
+
+// ============================================
+// TEXTOS
+// ============================================
+
+model Text {
+  id           Int       @id @default(autoincrement())
+  title        String
+  content      String    @db.Text
+  difficultyId Int       @map("difficulty_id")
+  typeId       Int       @map("type_id")
+  languageId   Int       @map("language_id")
+  createdBy    CreatedBy @map("created_by")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relaciones
+  difficulty  Difficulty        @relation(fields: [difficultyId], references: [id])
+  type        TextType          @relation(fields: [typeId], references: [id])
+  language    Language          @relation(fields: [languageId], references: [id])
+  sessions    TypingSession[]
+  textHistory UserTextHistory[]
+
+  @@index([difficultyId, typeId, languageId], name: "idx_text_filters")
+  @@map("texts")
+}
+
+// ============================================
+// ESTADÍSTICAS POR DIFICULTAD
+// ============================================
+
+model UserStatsByDifficulty {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @map("user_id")
+  difficultyId     Int      @map("difficulty_id")
+  bestWpm          Int      @default(0) @map("best_wpm")
+  avgWpm           Float    @default(0) @map("avg_wpm")
+  avgAccuracy      Float    @default(0) @map("avg_accuracy")
+  totalSessions    Int      @default(0) @map("total_sessions")
+  totalTimeSeconds Int      @default(0) @map("total_time_seconds")
+  avgErrorRate     Float    @default(0) @map("avg_error_rate")
+
+  // Relaciones
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  difficulty Difficulty @relation(fields: [difficultyId], references: [id])
+
+  @@unique([userId, difficultyId])
+  @@index([difficultyId, bestWpm], name: "idx_difficulty_ranking")
+  @@map("user_stats_by_difficulty")
+}
+
+// ============================================
+// SESIONES Y ERRORES
+// ============================================
+
+model TypingSession {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  textId          Int      @map("text_id")
+  wpm             Int?
+  accuracy        Float?
+  timeSeconds     Int?     @map("time_seconds")
+  errorRate       Float?   @map("error_rate")
+  improvementRate Float?   @map("improvement_rate")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relaciones
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text   Text          @relation(fields: [textId], references: [id])
+  errors TypingError[]
+
+  @@index([userId, createdAt], name: "idx_user_sessions")
+  @@map("typing_sessions")
+}
+
+model TypingError {
+  id          Int     @id @default(autoincrement())
+  sessionId   Int     @map("session_id")
+  wrongWord   String? @map("wrong_word")
+  correctWord String? @map("correct_word")
+  position    Int?
+
+  // Relaciones
+  session TypingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("typing_errors")
+}
+
+// ============================================
+// HISTORIAL
+// ============================================
+
+model UserTextHistory {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  textId        Int      @map("text_id")
+  lastAttemptAt DateTime @map("last_attempt_at")
+  totalAttempts Int      @default(1) @map("total_attempts")
+  bestWpm       Int?     @map("best_wpm")
+  bestAccuracy  Float?   @map("best_accuracy")
+
+  // Relaciones
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text Text @relation(fields: [textId], references: [id])
+
+  @@unique([userId, textId])
+  @@index([userId, lastAttemptAt])
+  @@map("user_text_history")
+}
