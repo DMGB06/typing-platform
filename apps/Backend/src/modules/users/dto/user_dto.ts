@@ -1,5 +1,4 @@
 import {
-  IsBoolean,
   IsEmail,
   IsNotEmpty,
   IsOptional,
@@ -14,20 +13,16 @@ export class UpdateUserDto {
   @IsNotEmpty()
   @MinLength(3)
   @MaxLength(20)
-  username: string = '';
+  username!: string;
 
   @IsOptional()
   @IsEmail()
   @IsNotEmpty()
-  email: string = '';
+  email!: string;
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MinLength(6)
-  password: string = '';
-
-  @IsOptional()
-  @IsBoolean()
-  isActive: boolean = true;
+  password!: string;
 }

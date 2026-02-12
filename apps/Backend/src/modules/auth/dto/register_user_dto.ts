@@ -1,15 +1,24 @@
-import { IsEmail, MinLength, IsString, IsBoolean } from 'class-validator';
+import {
+  IsEmail,
+  MinLength,
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+} from 'class-validator';
 
 export class RegisterUserDto {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(3)
+  @MaxLength(20)
+  username!: string;
+
   @IsEmail()
-  email: string = '';
+  @IsNotEmpty()
+  email!: string;
 
   @IsString()
-  username: string = '';
-
+  @IsNotEmpty()
   @MinLength(6)
-  password: string = '';
-
-  @IsBoolean()
-  isActive: boolean = true;
+  password!: string;
 }

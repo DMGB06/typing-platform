@@ -37,26 +37,30 @@ export class AuthService {
     const hashPassword = await bycript.hash(registerUserDto.password, 10);
 
     //Creamos el usuario en la base de datos con el hash de la contraseña
-    const user = await this.prisma.user.create({
-      data: {
-        username: registerUserDto.username,
-        email: registerUserDto.email,
-        passwordHash: hashPassword,
-      },
-    });
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          username: registerUserDto.username,
+          email: registerUserDto.email,
+          passwordHash: hashPassword,
+        },
+      });
 
-    //Creacion del token
-    const token = this.generateToken(user.id, user.email, user.role);
+      //Creacion del token
+      const token = this.generateToken(user.id, user.email, user.role);
 
-    return {
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
-      token,
-    };
+      return {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
+        token,
+      };
+    } catch (error) {
+      console.log('Error al registrar usuario:', error);
+    }
   }
 
   async login(loginUserDto: LoginUserDto) {
@@ -79,19 +83,37 @@ export class AuthService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
-    return {
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
-      token: this.generateToken(user.id, user.email, user.role),
-    };
+    if (!user.isActive) {
+      throw new UnauthorizedException('Usuario inactivo');
+    }
+
+    try {
+      return {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
+        token: this.generateToken(
+          user.id,
+          user.email,
+          user.role,
+          user.isActive,
+        ),
+      };
+    } catch (error) {
+      console.error('Error al generar token:', error);
+    }
   }
 
-  private generateToken(userId: number, email: string, role: string) {
-    const payload = { userId, email, role };
+  private generateToken(
+    userId: number,
+    email: string,
+    role: string,
+    isActive: boolean = true,
+  ) {
+    const payload = { sub: userId, email, role, isActive };
     return this.jwtService.sign(payload);
   }
 
@@ -103,6 +125,7 @@ export class AuthService {
         username: true,
         email: true,
         role: true,
+        isActive: true,
       },
     });
 

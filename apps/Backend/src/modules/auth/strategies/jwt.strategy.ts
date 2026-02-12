@@ -7,6 +7,7 @@ interface JwtPayload {
   sub: number;
   username: string;
   email: string;
+  isActive: boolean | null;
 }
 
 @Injectable()
@@ -24,6 +25,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException();
     }
-    return user;
+    if (!user.isActive) {
+      throw new UnauthorizedException('Usuario inactivo');
+    }
+    // Retorna el usuario completo con el rol
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      username: user.username,
+      isActive: user.isActive,
+    };
   }
 }
