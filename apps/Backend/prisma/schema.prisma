@@ -48,19 +48,6 @@ model Difficulty {
   @@map("difficulties")
 }
 
-model TextType {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  description String?
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
-
-  // Relaciones
-  texts Text[]
-
-  @@map("text_types")
-}
-
 model Language {
   id        Int       @id @default(autoincrement())
   code      String    @unique
@@ -112,7 +99,6 @@ model Text {
 
   // Relaciones
   difficulty  Difficulty        @relation(fields: [difficultyId], references: [id])
-  type        TextType          @relation(fields: [typeId], references: [id])
   language    Language          @relation(fields: [languageId], references: [id])
   sessions    TypingSession[]
   textHistory UserTextHistory[]
