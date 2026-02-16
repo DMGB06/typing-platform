@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DifficultiesAdminService } from './difficulties.service';
 import { PrismaService } from '../../../Prisma/prisma.service';
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 describe('DifficultiesAdminService', () => {
   let service: DifficultiesAdminService;
@@ -71,6 +71,7 @@ describe('DifficultiesAdminService', () => {
         id: 1,
         name: 'easy',
         description: 'Easy level',
+        orderIndex: 1,
       });
     });
 
@@ -117,6 +118,14 @@ describe('DifficultiesAdminService', () => {
         description: 'Medium level',
         orderIndex: 2,
       };
+      const existingDifficulty = {
+        id: 1,
+        name: 'easy',
+        description: 'Easy level',
+        orderIndex: 1,
+        isActive: true,
+        createdAt: new Date(),
+      };
       const updatedDifficulty = {
         id: 1,
         name: 'medium',
@@ -126,6 +135,9 @@ describe('DifficultiesAdminService', () => {
         createdAt: new Date(),
       };
 
+      mockPrismaService.difficulty.findUnique.mockResolvedValueOnce(
+        existingDifficulty,
+      );
       mockPrismaService.difficulty.findFirst.mockResolvedValue(null);
       mockPrismaService.difficulty.update.mockResolvedValue(updatedDifficulty);
 
@@ -135,7 +147,21 @@ describe('DifficultiesAdminService', () => {
         id: 1,
         name: 'medium',
         description: 'Medium level',
+        orderIndex: 2,
+        isActive: true,
       });
+    });
+
+    it('should throw NotFoundException if difficulty does not exist', async () => {
+      const updateDto = {
+        name: 'medium',
+      };
+
+      mockPrismaService.difficulty.findUnique.mockResolvedValue(null);
+
+      await expect(service.updateDifficulty(1, updateDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ConflictException if name already exists', async () => {
@@ -145,6 +171,10 @@ describe('DifficultiesAdminService', () => {
         orderIndex: 2,
       };
 
+      mockPrismaService.difficulty.findUnique.mockResolvedValueOnce({
+        id: 1,
+        name: 'easy',
+      });
       mockPrismaService.difficulty.findFirst.mockResolvedValueOnce({
         id: 2,
         name: 'medium',
@@ -187,12 +217,22 @@ describe('DifficultiesAdminService', () => {
         skip: 0,
         take: 10,
         orderBy: { orderIndex: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          orderIndex: true,
+          isActive: true,
+        },
       });
       expect(result).toEqual({
         data: difficulties,
-        total: 5,
-        page: 1,
-        lastPage: 1,
+        meta: {
+          total: 5,
+          page: 1,
+          limit: 10,
+          lastPage: 1,
+        },
       });
     });
   });
@@ -205,7 +245,6 @@ describe('DifficultiesAdminService', () => {
         description: 'Easy level',
         orderIndex: 1,
         isActive: true,
-        createdAt: new Date(),
       };
 
       mockPrismaService.difficulty.findUnique.mockResolvedValue(difficulty);
@@ -214,20 +253,28 @@ describe('DifficultiesAdminService', () => {
 
       expect(mockPrismaService.difficulty.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          orderIndex: true,
+          isActive: true,
+        },
       });
       expect(result).toEqual({
         id: 1,
         name: 'easy',
         description: 'Easy level',
+        orderIndex: 1,
         isActive: true,
       });
     });
 
-    it('should throw ConflictException if difficulty not found', async () => {
+    it('should throw NotFoundException if difficulty not found', async () => {
       mockPrismaService.difficulty.findUnique.mockResolvedValue(null);
 
       await expect(service.getDifficultyById(1)).rejects.toThrow(
-        ConflictException,
+        NotFoundException,
       );
     });
   });
@@ -266,11 +313,11 @@ describe('DifficultiesAdminService', () => {
       });
     });
 
-    it('should throw ConflictException if difficulty not found', async () => {
+    it('should throw NotFoundException if difficulty not found', async () => {
       mockPrismaService.difficulty.findUnique.mockResolvedValue(null);
 
       await expect(service.deleteDifficulty(1)).rejects.toThrow(
-        ConflictException,
+        NotFoundException,
       );
     });
   });

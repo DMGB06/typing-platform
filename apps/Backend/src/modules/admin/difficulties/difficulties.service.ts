@@ -1,4 +1,8 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../Prisma/prisma.service';
 
 import {
@@ -11,203 +15,200 @@ import {
 export class DifficultiesAdminService {
   constructor(private prisma: PrismaService) {}
 
-  //Catalogos
-  //Dificultades
-  //Crear dificultad
+  private normalizeString(str: string): string {
+    return str
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  // Crear dificultad
   async createDifficulty(createDifficultyDto: CreateDifficultyDto) {
-    const nameExists = await this.prisma.difficulty.findUnique({
-      where: {
-        name: createDifficultyDto.name
-          .trim()
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, ''),
-      },
-    });
+    const normalizedName = this.normalizeString(createDifficultyDto.name);
+
+    const [nameExists, orderIndexExists] = await Promise.all([
+      this.prisma.difficulty.findUnique({
+        where: { name: normalizedName },
+      }),
+      this.prisma.difficulty.findFirst({
+        where: { orderIndex: createDifficultyDto.orderIndex },
+      }),
+    ]);
 
     if (nameExists) {
       throw new ConflictException('Dificultad con ese nombre ya existe');
     }
 
-    //Verificar que el orderIndex no exista
-    const orderIndexExists = await this.prisma.difficulty.findFirst({
-      where: { orderIndex: createDifficultyDto.orderIndex },
-    });
-
     if (orderIndexExists) {
       throw new ConflictException('Dificultad con ese orderIndex ya existe');
     }
 
-    try {
-      const difficulty = await this.prisma.difficulty.create({
-        data: {
-          name: createDifficultyDto.name
-            .trim()
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, ''),
-          description: createDifficultyDto.description || null,
-        },
-      });
-
-      return {
-        id: difficulty.id,
-        name: difficulty.name,
-        description: difficulty.description,
-      };
-    } catch (error) {
-      console.error('Error al crear dificultad:', error);
-      throw new Error('Error al crear dificultad');
-    }
-  }
-
-  //Actualizar dificultad
-  async updateDifficulty(id: number, updateDifficultyDto: UpdateDifficultyDto) {
-    const userNameExist = await this.prisma.difficulty.findFirst({
-      where: {
-        name: updateDifficultyDto.name
-          .trim()
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, ''),
-        NOT: { id: id },
+    const difficulty = await this.prisma.difficulty.create({
+      data: {
+        name: normalizedName,
+        description: createDifficultyDto.description || null,
+        orderIndex: createDifficultyDto.orderIndex,
       },
     });
 
-    if (userNameExist) {
-      throw new ConflictException('Dificultad con ese nombre ya existe');
-    }
-
-    //Verificar que el orderIndex no exista
-    const orderIndexExists = await this.prisma.difficulty.findFirst({
-      where: {
-        orderIndex: updateDifficultyDto.orderIndex,
-        NOT: { id: id },
-      },
-    });
-
-    if (orderIndexExists) {
-      throw new ConflictException('Dificultad con ese orderIndex ya existe');
-    }
-
-    const updateDifficultyData: Record<string, unknown> = {
-      ...(updateDifficultyDto.name && {
-        name: updateDifficultyDto.name
-          .trim()
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, ''),
-      }),
-      ...(updateDifficultyDto.description !== undefined && {
-        description: updateDifficultyDto.description,
-      }),
-      ...(updateDifficultyDto.orderIndex !== undefined && {
-        orderIndex: updateDifficultyDto.orderIndex,
-      }),
-      ...(updateDifficultyDto.isActive !== undefined && {
-        isActive: updateDifficultyDto.isActive,
-      }),
+    return {
+      id: difficulty.id,
+      name: difficulty.name,
+      description: difficulty.description,
+      orderIndex: difficulty.orderIndex,
     };
-
-    try {
-      const difficulty = await this.prisma.difficulty.update({
-        where: { id },
-        data: updateDifficultyData,
-      });
-
-      return {
-        id: difficulty.id,
-        name: difficulty.name,
-        description: difficulty.description,
-      };
-    } catch (error) {
-      console.error('Error al actualizar dificultad:', error);
-      throw new Error('Error al actualizar dificultad');
-    }
   }
 
-  //Actualizar dificultad isActive (activar/desactivar)
+  // Actualizar dificultad
+  async updateDifficulty(id: number, updateDifficultyDto: UpdateDifficultyDto) {
+    // Verificar que la dificultad existe
+    const existingDifficulty = await this.prisma.difficulty.findUnique({
+      where: { id },
+    });
 
-  async deleteDifficulty(id: number) {
-    try {
-      const difficulty = await this.prisma.difficulty.findUnique({
-        where: { id },
-      });
+    if (!existingDifficulty) {
+      throw new NotFoundException('Dificultad no encontrada');
+    }
 
-      if (!difficulty) {
-        throw new ConflictException('Dificultad no encontrada');
-      }
-
-      const deletedDifficulty = await this.prisma.difficulty.update({
-        where: { id },
-        data: {
-          isActive: false,
+    // Validar nombre si se proporciona
+    if (updateDifficultyDto.name) {
+      const normalizedName = this.normalizeString(updateDifficultyDto.name);
+      const nameExists = await this.prisma.difficulty.findFirst({
+        where: {
+          name: normalizedName,
+          id: { not: id },
         },
       });
 
-      return {
-        id: deletedDifficulty.id,
-        name: deletedDifficulty.name,
-        description: deletedDifficulty.description,
-        isActive: deletedDifficulty.isActive,
-      };
-    } catch (error) {
-      console.error('Error al eliminar dificultad:', error);
-      if (error instanceof ConflictException) {
-        throw error;
+      if (nameExists) {
+        throw new ConflictException('Dificultad con ese nombre ya existe');
       }
-      throw new Error('Error al eliminar dificultad');
     }
-  }
 
-  //Obtner una dificultad por ID
-  async getDifficultyById(id: number) {
-    try {
-      const difficulty = await this.prisma.difficulty.findUnique({
-        where: { id },
+    // Validar orderIndex si se proporciona
+    if (updateDifficultyDto.orderIndex !== undefined) {
+      const orderIndexExists = await this.prisma.difficulty.findFirst({
+        where: {
+          orderIndex: updateDifficultyDto.orderIndex,
+          id: { not: id },
+        },
       });
 
-      if (!difficulty) {
-        throw new ConflictException('Dificultad no encontrada');
+      if (orderIndexExists) {
+        throw new ConflictException('Dificultad con ese orderIndex ya existe');
       }
-
-      return {
-        id: difficulty.id,
-        name: difficulty.name,
-        description: difficulty.description,
-        isActive: difficulty.isActive,
-      };
-    } catch (error) {
-      console.error('Error al obtener dificultad por ID:', error);
-      throw error;
     }
+
+    const updateData: Partial<{
+      name: string;
+      description: string | null;
+      orderIndex: number;
+      isActive: boolean;
+    }> = {};
+
+    if (updateDifficultyDto.name) {
+      updateData.name = this.normalizeString(updateDifficultyDto.name);
+    }
+
+    if (updateDifficultyDto.description !== undefined) {
+      updateData.description = updateDifficultyDto.description;
+    }
+
+    if (updateDifficultyDto.orderIndex !== undefined) {
+      updateData.orderIndex = updateDifficultyDto.orderIndex;
+    }
+
+    if (updateDifficultyDto.isActive !== undefined) {
+      updateData.isActive = updateDifficultyDto.isActive;
+    }
+
+    const difficulty = await this.prisma.difficulty.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return {
+      id: difficulty.id,
+      name: difficulty.name,
+      description: difficulty.description,
+      orderIndex: difficulty.orderIndex,
+      isActive: difficulty.isActive,
+    };
   }
 
+  // Desactivar dificultad (soft delete)
+  async deleteDifficulty(id: number) {
+    const difficulty = await this.prisma.difficulty.findUnique({
+      where: { id },
+    });
+
+    if (!difficulty) {
+      throw new NotFoundException('Dificultad no encontrada');
+    }
+
+    const deletedDifficulty = await this.prisma.difficulty.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    return {
+      id: deletedDifficulty.id,
+      name: deletedDifficulty.name,
+      description: deletedDifficulty.description,
+      isActive: deletedDifficulty.isActive,
+    };
+  }
+
+  // Obtener una dificultad por ID
+  async getDifficultyById(id: number) {
+    const difficulty = await this.prisma.difficulty.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        orderIndex: true,
+        isActive: true,
+      },
+    });
+
+    if (!difficulty) {
+      throw new NotFoundException('Dificultad no encontrada');
+    }
+
+    return difficulty;
+  }
+
+  // Obtener dificultades con paginación
   async getDifficulties(paginationDto: PaginationDto) {
-    try {
-      const { page, limit } = paginationDto;
-      const skip = (page - 1) * limit;
+    const { page, limit } = paginationDto;
+    const skip = (page - 1) * limit;
 
-      // Obtener las dificultades con paginación
-      const [data, total] = await Promise.all([
-        this.prisma.difficulty.findMany({
-          skip,
-          take: limit,
-          orderBy: { orderIndex: 'asc' }, // Ordenar por el índice de orden
-        }),
-        this.prisma.difficulty.count(), // Contar el total de registros
-      ]);
+    const [data, total] = await Promise.all([
+      this.prisma.difficulty.findMany({
+        skip,
+        take: limit,
+        orderBy: { orderIndex: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          orderIndex: true,
+          isActive: true,
+        },
+      }),
+      this.prisma.difficulty.count(),
+    ]);
 
-      // Retornar los datos con información de paginación
-      return {
-        data,
+    return {
+      data,
+      meta: {
         total,
         page,
-        lastPage: Math.ceil(total / limit), // Calcular la última página
-      };
-    } catch (error) {
-      console.error('Error al obtener dificultades:', error);
-      throw new Error('Error al obtener dificultades');
-    }
+        limit,
+        lastPage: Math.ceil(total / limit),
+      },
+    };
   }
 }
