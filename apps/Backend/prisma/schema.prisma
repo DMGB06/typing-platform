@@ -1,11 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-
-
 generator client {
   provider = "prisma-client-js"
 } 
@@ -14,7 +9,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
 // ============================================
 // ENUMS
 // ============================================
@@ -22,11 +16,6 @@ datasource db {
 enum UserRole {
   USER
   ADMIN
-}
-
-enum CreatedBy {
-  ADMIN
-  AI
 }
 
 // ============================================
@@ -48,12 +37,26 @@ model Difficulty {
   @@map("difficulties")
 }
 
+// ⭐ AGREGADO - Faltaba este modelo
+model TextType {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relaciones
+  texts Text[]
+
+  @@map("text_types")
+}
+
 model Language {
-  id        Int       @id @default(autoincrement())
-  code      String    @unique
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
   name      String
-  isActive  Boolean   @default(true) @map("is_active")
-  createdAt DateTime  @default(now()) @map("created_at")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relaciones
   texts Text[]
@@ -66,18 +69,19 @@ model Language {
 // ============================================
 
 model User {
-  id           Int       @id @default(autoincrement())
-  username     String    @unique
-  email        String    @unique
-  passwordHash String    @map("password_hash")
-  role         UserRole  @default(USER)
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(USER)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   // Relaciones
-  sessions    TypingSession[]
-  stats       UserStatsByDifficulty[]
-  textHistory UserTextHistory[]
+  sessions     TypingSession[]
+  stats        UserStatsByDifficulty[]
+  textHistory  UserTextHistory[]
+  createdTexts Text[]
 
   @@map("users")
 }
@@ -87,19 +91,21 @@ model User {
 // ============================================
 
 model Text {
-  id           Int       @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   title        String
-  content      String    @db.Text
-  difficultyId Int       @map("difficulty_id")
-  typeId       Int       @map("type_id")
-  languageId   Int       @map("language_id")
-  createdBy    CreatedBy @map("created_by")
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  content      String   @db.Text
+  difficultyId Int      @map("difficulty_id")
+  typeId       Int      @map("type_id")
+  languageId   Int      @map("language_id")
+  createdById  Int      @map("created_by_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   // Relaciones
   difficulty  Difficulty        @relation(fields: [difficultyId], references: [id])
+  type        TextType          @relation(fields: [typeId], references: [id])  // ⭐ AGREGADO
   language    Language          @relation(fields: [languageId], references: [id])
+  createdBy   User              @relation(fields: [createdById], references: [id])
   sessions    TypingSession[]
   textHistory UserTextHistory[]
 

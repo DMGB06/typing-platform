@@ -4,7 +4,9 @@ declare global {
   namespace Express {
     // Extiende la interfaz Request
     interface Request {
-      user?: CurrentUser;
+      user: CurrentUser;
     }
   }
 }
+
+export {};
