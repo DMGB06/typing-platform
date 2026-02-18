@@ -32,10 +32,7 @@ export class TextController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createText(
-    @Body() createTextDto: CreateTextDto,
-    @Req() req: Request,
-  ) {
+  async createText(@Body() createTextDto: CreateTextDto, @Req() req: Request) {
     const currentUser = req.user as CurrentUser;
     return this.textService.createText(createTextDto, currentUser.id);
   }
