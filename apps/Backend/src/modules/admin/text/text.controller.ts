@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
   ParseIntPipe,
   HttpCode,
@@ -33,7 +34,7 @@ export class TextController {
   @HttpCode(HttpStatus.CREATED)
   async createText(
     @Body() createTextDto: CreateTextDto,
-    @Param() req: Request,
+    @Req() req: Request,
   ) {
     const currentUser = req.user as CurrentUser;
     return this.textService.createText(createTextDto, currentUser.id);

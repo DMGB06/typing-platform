@@ -37,7 +37,7 @@ model Difficulty {
   @@map("difficulties")
 }
 
-// ⭐ AGREGADO - Faltaba este modelo
+// AGREGADO - Faltaba este modelo
 model TextType {
   id          Int      @id @default(autoincrement())
   name        String   @unique
