@@ -5,5 +5,6 @@ import { TextController } from './text.controller';
 @Module({
   controllers: [TextController],
   providers: [TextService],
+  exports: [TextService],
 })
 export class TextModule {}
