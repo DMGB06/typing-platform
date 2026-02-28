@@ -1,6 +1,8 @@
+import { redirect } from 'next/navigation';
 
-export default function Register() {
-    return (
-        <div>Register Page</div>
-    )
+/**
+ * Redirige a la página unificada de autenticación
+ */
+export default function RegisterPage() {
+  redirect('/auth');
 }

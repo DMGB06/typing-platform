@@ -1,14 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FilterState } from './TypingArea';
-
-interface TypingDisplayProps {
-  filters: FilterState;
-  isStarted: boolean;
-  onStart: () => void;
-  onReset: () => void;
-}
+import type { TypingDisplayProps, Text } from '@/types';
+import { getRandomText } from '@/lib/api/texts';
 
 /**
  * Componente TypingDisplay - Display del texto y estadísticas
@@ -26,6 +20,9 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
 }) => {
   // Estado del texto y tipeo
   const [text, setText] = useState('');
+  const [_textData, setTextData] = useState<Text | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [userInput, setUserInput] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [errors, setErrors] = useState(0);
@@ -34,20 +31,34 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
   const [accuracy, setAccuracy] = useState(100);
   const [timeSeconds, setTimeSeconds] = useState(0);
 
-  // Generar texto basado en filtros (mock - luego conectar con API)
+  // Obtener texto basado en filtros desde la API
   useEffect(() => {
-    // Aquí harías una llamada al backend para obtener el texto según los filtros
-    // Por ahora, texto de ejemplo
-    const sampleTexts = {
-      words: 'ella algunos acto preguntar cosa caliente buscar tal lugar y semana como acerca pequeño nunca nombre menor mujer gente derecho bajo venir un uno son tomar porque madre poco donde dar decir',
-      quote: 'La vida es aquello que te va sucediendo mientras te empeñas en hacer otros planes.',
-      custom: 'Este es un texto personalizado para practicar mecanografía.',
+    // No hacer fetch hasta que los filtros tengan IDs válidos (catálogos cargados)
+    if (!filters.typeId && !filters.difficultyId && !filters.languageId) return;
+
+    const fetchText = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const randomText = await getRandomText({
+          difficultyId: filters.difficultyId ?? undefined,
+          typeId: filters.typeId ?? undefined,
+          languageId: filters.languageId ?? undefined,
+        });
+        setTextData(randomText);
+        setText(randomText.content);
+      } catch (err) {
+        console.error('Error fetching text:', err);
+        setError('No se encontró un texto con esos filtros. Intenta con otra combinación.');
+        setText('');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const baseText = sampleTexts[filters.textType as keyof typeof sampleTexts] || sampleTexts.words;
-    const words = baseText.split(' ').slice(0, filters.wordCount);
-    setText(words.join(' '));
-    
+    fetchText();
+
     // Reset estados
     setUserInput('');
     setCurrentIndex(0);
@@ -120,68 +131,141 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
   };
 
   return (
-    <div className="space-y-8">
-      
+    <div className="space-y-12">
+
       {/* Área de Texto */}
       <div
         className="rounded-xl p-8 relative focus-within:ring-2 focus-within:ring-(--color-accent) transition-all"
         style={{ backgroundColor: 'var(--color-bg-secondary)' }}
-        tabIndex={0}
+        tabIndex={loading ? -1 : 0}
         onKeyDown={handleKeyPress}
       >
-        {/* Instrucción */}
-        {!isStarted && (
-          <div className="text-center mb-6">
-            <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
-              Click here or press any key to start
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2"
+              style={{ borderColor: 'var(--color-accent)' }}></div>
+            <p className="text-sm mt-4" style={{ color: 'var(--color-text-tertiary)' }}>
+              Cargando texto...
             </p>
           </div>
         )}
 
-        {/* Texto */}
-        <div className="text-2xl leading-relaxed font-mono text-center select-none">
-          {text.split('').map((char, index) => {
-            let color = 'var(--color-text-tertiary)'; // pendiente
-            
-            if (index < userInput.length) {
-              // Ya fue escrito
-              color = userInput[index] === char 
-                ? 'var(--color-success)' 
-                : 'var(--color-error)';
-            } else if (index === currentIndex) {
-              // Carácter actual
-              color = 'var(--color-accent)';
-            }
-
-            return (
-              <span
-                key={index}
-                style={{ color }}
-                className={index === currentIndex ? 'border-b-2' : ''}
-              >
-                {char}
-              </span>
-            );
-          })}
-        </div>
-
-        {/* Botón Restart */}
-        {isStarted && (
-          <div className="absolute top-4 right-4">
-            <button
-              onClick={handleRestart}
-              className="text-sm transition-colors duration-200 hover:opacity-70"
-              style={{ color: 'var(--color-text-tertiary)' }}
-              title="Restart (Ctrl + R)"
+        {/* Empty / Error State */}
+        {error && !loading && (
+          <div className="flex flex-col items-center justify-center py-16 px-6">
+            {/* Icono */}
+            <div
+              className="flex items-center justify-center w-16 h-16 rounded-full mb-5"
+              style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
             >
-              ↻ restart
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                <line x1="8" y1="11" x2="14" y2="11" />
+              </svg>
+            </div>
+
+            {/* Mensaje */}
+            <p
+              className="text-base font-medium mb-1.5"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Sin resultados para esta combinación
+            </p>
+            <p
+              className="text-sm mb-6 max-w-xs text-center"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              No hay textos que coincidan con el tipo, dificultad e idioma seleccionados. Prueba cambiando algún filtro.
+            </p>
+
+            {/* Botón */}
+            <button
+              onClick={() => window.location.reload()}
+              className="
+                px-5 py-2 rounded-lg text-sm font-medium
+                transition-all duration-200 cursor-pointer
+                hover:opacity-90 active:scale-[0.97]
+              "
+              style={{
+                backgroundColor: 'var(--color-bg-tertiary)',
+                color: 'var(--color-text-primary)',
+              }}
+            >
+              Reintentar
             </button>
           </div>
+        )}
+
+        {/* Text Display */}
+        {!loading && !error && (
+          <>
+            {/* Instrucción */}
+            {!isStarted && (
+              <div className="text-center mb-6">
+                <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+                  Click here or press any key to start
+                </p>
+              </div>
+            )}
+
+            {/* Texto */}
+            <div className="text-2xl leading-relaxed font-mono text-center select-none">
+              {text.split('').map((char, index) => {
+                let color = 'var(--color-text-tertiary)'; // pendiente
+
+                if (index < userInput.length) {
+                  // Ya fue escrito
+                  color = userInput[index] === char
+                    ? 'var(--color-success)'
+                    : 'var(--color-error)';
+                } else if (index === currentIndex) {
+                  // Carácter actual
+                  color = 'var(--color-accent)';
+                }
+
+                return (
+                  <span
+                    key={index}
+                    style={{ color }}
+                    className={index === currentIndex ? 'border-b-2' : ''}
+                  >
+                    {char}
+                  </span>
+                );
+              })}
+            </div>
+
+            {/* Botón Restart */}
+            {isStarted && (
+              <div className="absolute top-4 right-4">
+                <button
+                  onClick={handleRestart}
+                  className="text-sm transition-colors duration-200 hover:opacity-70"
+                  style={{ color: 'var(--color-text-tertiary)' }}
+                  title="Restart (Ctrl + R)"
+                >
+                  ↻ restart
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Estadísticas */}
-      <div className="flex items-center justify-center gap-12">
+      <div className="flex items-center justify-center gap-12 mt-14 pt-4">
         <div className="text-center">
           <div className="text-4xl font-bold" style={{ color: 'var(--color-accent)' }}>
             {wpm}

@@ -1,6 +1,8 @@
+import { redirect } from 'next/navigation';
 
-export default function Login() {
-    return (
-        <div>Login Page</div>
-    );
+/**
+ * Redirige a la página unificada de autenticación
+ */
+export default function LoginPage() {
+  redirect('/auth');
 }   
