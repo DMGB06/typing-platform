@@ -2,6 +2,8 @@
 
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer} from '@/components/layout/Footer';
+import { TypingArea } from '@/components/typing/TypingArea';
+
 /**
  * Página principal - Home
  * 
@@ -14,13 +16,13 @@ import { Footer} from '@/components/layout/Footer';
  */
 export default function Home() {  
   return (
-    <div className="min-h-screen min-w-full flex flex-col px-2 lg:px-24"> {/* agrega bg para ver el padding */}
+    <div className="min-h-screen min-w-full flex flex-col px-2 lg:px-24">
       
     <Navbar></Navbar>
       
-      {/* Main Content */}
+      {/* Main Content - Área de Typing */}
       <main className="flex-1 flex items-center justify-center py-12">
-        Contenido
+        <TypingArea />
       </main>
       
       {/* Footer */}

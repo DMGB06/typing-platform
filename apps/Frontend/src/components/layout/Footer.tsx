@@ -12,7 +12,7 @@ export const Footer: React.FC = () => {
           {/* Descripción del proyecto */}
           <div className="space-y-3">
             <h3 className="text-base font-semibold" style={{ color: 'var(--color-accent)' }}>
-              typingpro
+              typingpro 
             </h3>
             <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--color-text-tertiary)' }}>
               Desarrollado por{' '}
@@ -24,7 +24,7 @@ export const Footer: React.FC = () => {
               2026 · Con mucho cariño para la comunidad dev
             </p>
           </div>
-
+    
           {/* Iconos + botón GitHub */}
           <div className="flex flex-col items-start md:items-end gap-4">
             <div className="flex items-center gap-7">
