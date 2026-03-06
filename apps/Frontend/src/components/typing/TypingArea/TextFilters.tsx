@@ -89,10 +89,10 @@ export const TextFilters: React.FC<TextFiltersProps> = ({
 
   // Iconos por nombre de tipo de texto
   const typeIcons: Record<string, string> = {
-    'Párrafo': '¶',
-    'Código': '⟨/⟩',
-    'Cita': '❝',
-    'Artículo': '§',
+    'Párrafo': '¶  ',
+    'Código': '⟨/⟩  ',
+    'Cita': '❝  ',
+    'Artículo': '§  ',
   };
 
   const selectedLang = catalogs.languages.find((l) => l.id === filters.languageId);

@@ -122,10 +122,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             {/* Header */}
             <div className="flex items-center gap-2.5 mb-4">
                 <div
-                    className="flex items-center justify-center w-8 h-8 rounded-lg border"
+                    className="flex items-center justify-center w-8 h-8"
                     style={{
-                        borderColor: 'var(--color-bg-tertiary)',
-                        backgroundColor: 'var(--color-bg-primary)',
                         color: 'var(--color-text-secondary)',
                     }}
                 >
@@ -137,9 +135,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                     <h2 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
                         Crear cuenta
                     </h2>
-                    <p className="text-[11px]" style={{ color: 'var(--color-text-tertiary)' }}>
-                        Únete y mejora tu velocidad
-                    </p>
+
                 </div>
             </div>
 
@@ -161,7 +157,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} noValidate className="space-y-3">
+            <form onSubmit={handleSubmit} noValidate className="space-y-10">
                 {fields.map((field) => (
                     <AuthInput
                         key={field.name}
