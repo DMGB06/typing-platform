@@ -7,7 +7,7 @@
  */
 
 import type { RegisterRequest, LoginRequest, AuthResponse } from "@/types";
-import { apiClient, setToken } from "./client";
+import { apiClient, setToken, removeToken, setStoredUser, removeStoredUser } from "./client";
 
 /**
  * Registra un nuevo usuario y guarda el token
@@ -19,6 +19,7 @@ export async function register(data: RegisterRequest): Promise<AuthResponse> {
   });
 
   setToken(response.token);
+  setStoredUser(response.user);
   return response;
 }
 
@@ -32,5 +33,14 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
   });
 
   setToken(response.token);
+  setStoredUser(response.user);
   return response;
+}
+
+/**
+ * Cierra sesión eliminando el token y los datos de usuario
+ */
+export function logout(): void {
+  removeToken();
+  removeStoredUser();
 }

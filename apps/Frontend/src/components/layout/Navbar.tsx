@@ -1,19 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { GiKeyboard } from "react-icons/gi";
+import { useAuth } from '@/hooks/useAuth';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+
 /**
  * Componente Navbar - Estilo Monkeytype
  * 
- * Distribución:s
+ * Distribución:
  * - Logo a la izquierda + navegación junto al logo
- * - Acciones de usuario a la derecha
+ * - Acciones de usuario a la derecha (Login ó Perfil+Logout según sesión)
  * - Responsive: oculta algunos elementos en móvil
  */
 export const Navbar: React.FC = () => {
+    const { isLoggedIn, ready, logout } = useAuth();
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     return (
+        <>
         <nav className="w-full pt-4">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
@@ -78,7 +84,6 @@ export const Navbar: React.FC = () => {
                                 </svg>
                             </Link>
 
-                      
                         </div>
                     </div>
 
@@ -97,22 +102,69 @@ export const Navbar: React.FC = () => {
                             </svg>
                         </Link>
 
-                        {/* Perfil de Usuario - siempre visible */}
-                        <Link
-                            href="/auth"
-                            className="flex items-center justify-center w-10 h-10 rounded transition-colors duration-200 hover:bg-[var(--color-hover)]"
-                            style={{ color: 'var(--color-text-secondary)' }}
-                            aria-label="Iniciar sesión"
-                            title="Iniciar sesión"
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 20 20">
-                                <circle cx="10" cy="7" r="3" strokeWidth="1.5" />
-                                <path d="M4 17c0-3 2.5-5 6-5s6 2 6 5" strokeWidth="1.5" strokeLinecap="round" />
-                            </svg>
-                        </Link>
+                        {/* Perfil de Usuario / Login — condicional según sesión */}
+                        {ready && (
+                            isLoggedIn ? (
+                                <>
+                                    {/* Botón Perfil */}
+                                    <Link
+                                        href="/profile"
+                                        className="flex items-center justify-center w-10 h-10 rounded transition-colors duration-200 hover:bg-[var(--color-hover)]"
+                                        style={{ color: 'var(--color-text-secondary)' }}
+                                        aria-label="Mi perfil"
+                                        title="Mi perfil"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+                                            <circle cx="10" cy="7" r="3" strokeWidth="1.5" />
+                                            <path d="M4 17c0-3 2.5-5 6-5s6 2 6 5" strokeWidth="1.5" strokeLinecap="round" />
+                                        </svg>
+                                    </Link>
+
+                                    {/* Botón Logout */}
+                                    <button
+                                        onClick={() => setShowLogoutModal(true)}
+                                        className="flex items-center justify-center w-10 h-10 rounded transition-colors duration-200 hover:bg-[var(--color-hover)]"
+                                        style={{ color: 'var(--color-text-secondary)' }}
+                                        aria-label="Cerrar sesión"
+                                        title="Cerrar sesión"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+                                            <path d="M13 10H3m0 0 3-3m-3 3 3 3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <path d="M8 5V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-1" strokeWidth="1.5" strokeLinecap="round" />
+                                        </svg>
+                                    </button>
+                                </>
+                            ) : (
+                                /* Botón Login */
+                                <Link
+                                    href="/auth"
+                                    className="flex items-center justify-center w-10 h-10 rounded transition-colors duration-200 hover:bg-[var(--color-hover)]"
+                                    style={{ color: 'var(--color-text-secondary)' }}
+                                    aria-label="Iniciar sesión"
+                                    title="Iniciar sesión"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+                                        <circle cx="10" cy="7" r="3" strokeWidth="1.5" />
+                                        <path d="M4 17c0-3 2.5-5 6-5s6 2 6 5" strokeWidth="1.5" strokeLinecap="round" />
+                                    </svg>
+                                </Link>
+                            )
+                        )}
                     </div>
                 </div>
             </div>
         </nav>
+
+        {/* Modal de confirmación de logout */}
+        <ConfirmModal
+            isOpen={showLogoutModal}
+            title="¿Cerrar sesión?"
+            description="Se eliminará tu sesión activa. Tendrás que iniciar sesión nuevamente."
+            confirmLabel="Cerrar sesión"
+            cancelLabel="Cancelar"
+            onConfirm={() => { setShowLogoutModal(false); logout(); }}
+            onCancel={() => setShowLogoutModal(false)}
+        />
+    </>
     );
 };

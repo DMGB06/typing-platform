@@ -20,7 +20,7 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
 }) => {
   // Estado del texto y tipeo
   const [text, setText] = useState('');
-  const [_textData, setTextData] = useState<Text | null>(null);
+  const [, setTextData] = useState<Text | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userInput, setUserInput] = useState('');

@@ -21,6 +21,28 @@ export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+// ── User helpers ─────────────────────────────────────────────
+
+const USER_KEY = "auth_user";
+
+export function getStoredUser<T = unknown>(): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: unknown): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function removeStoredUser(): void {
+  localStorage.removeItem(USER_KEY);
+}
+
 // ── Fetch wrapper ────────────────────────────────────────────
 
 interface RequestOptions {
