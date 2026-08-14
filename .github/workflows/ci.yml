@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/Backend
+    env:
+      # Prisma solo necesita una URL con forma valida para generar el
+      # cliente y tipar el codigo; no se conecta a una base real en este job.
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/typing_platform?schema=public"
+      JWT_SECRET: "ci-only-secret-not-used-in-production"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/Backend/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prisma generate
+      - run: pnpm run lint
+      - run: pnpm run build
+      - run: pnpm run test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/Frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
