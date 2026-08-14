@@ -1,0 +1,5 @@
+# Claude Code local state (worktrees, tool-managed workspaces)
+.claude/
+
+# Local project docs (context pack, plans) - not versioned, per-clone/local
+docs/
