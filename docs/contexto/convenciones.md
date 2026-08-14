@@ -1,7 +1,8 @@
 # Convenciones de código
 
 ## Estilo
-- Formato: Prettier (backend: `.prettierrc` → `singleQuote: true`, `trailingComma: "all"`, `endOfLine: auto`); ESLint + `eslint-plugin-prettier` enforce it (`apps/Backend/eslint.config.mjs`). Frontend usa `eslint-config-next` (`apps/Frontend/eslint.config.mjs`) [PENDIENTE: confirmar si hay `.prettierrc` propio en Frontend o si solo hereda reglas de Next]
+- Formato: Prettier (backend: `.prettierrc` → `singleQuote: true`, `trailingComma: "all"`, `endOfLine: auto`); ESLint + `eslint-plugin-prettier` enforce it (`apps/Backend/eslint.config.mjs`). Frontend no tiene Prettier: no hay `.prettierrc` ni dependencia `prettier` en `apps/Frontend/package.json`; el formato queda a lo que exige `eslint-config-next` (`apps/Frontend/eslint.config.mjs`)
+- Gestor de paquetes: backend usa **pnpm** (no `npm install` ahí, ver `docs/contexto/arquitectura.md`); frontend usa **npm**
 - Naming: módulos backend en `kebab-case` de carpeta + `PascalCase` de clase (`typing-sessions/typing-sessions.service.ts` → `TypingSessionsService`); componentes frontend en `PascalCase.tsx` (`AuthInput.tsx`, `LoginForm.tsx`)
 - Imports: Frontend usa alias `@/*` → `./src/*` (`apps/Frontend/tsconfig.json`, líneas 21-23); imports absolutos activamente usados en todo `src/` (p.ej. `useAuth.ts`, `Navbar.tsx`, `lib/api/auth.ts`). [PENDIENTE: no hay regla de ESLint explícita para orden de imports]
 
