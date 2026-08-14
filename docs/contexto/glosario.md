@@ -12,7 +12,7 @@
 - **Text** - `id, title, content, difficultyId, typeId, languageId, createdById, isActive, createdAt`. Texto de práctica con filtros indexados (`idx_text_filters` sobre difficulty/type/language).
 - **Difficulty** - `id, name, description, orderIndex, isActive, createdAt`. Catálogo de dificultad con orden para presentación en UI.
 - **Language** - `id, code, name, isActive, createdAt`. Catálogo de idiomas con código ISO y nombre.
-- **TextType** - `id, name, description, isActive, createdAt`. Catálogo de tipos de texto (e.g. "Poetry", "Prose", "Code").
+- **TextType** - `id, name, description, isActive, createdAt`. Catálogo de tipos de texto: Párrafo, Código, Cita, Artículo (semillas en `apps/Backend/prisma/seed.ts` líneas 56-87).
 - **TypingSession** - `id, userId, textId, wpm, accuracy, timeSeconds, errorRate, improvementRate, createdAt`. Registra una sesión de práctica completa de un usuario sobre un `Text`. Relaciona con `User`, `Text`, `TypingError[]`.
 - **UserStatsByDifficulty** - `id, userId, difficultyId, bestWpm, avgWpm, avgAccuracy, totalSessions, totalTimeSeconds, avgErrorRate`. Estadísticas agregadas de un usuario por nivel de dificultad. Relaciona con `User` y `Difficulty`.
 - **UserTextHistory** - `id, userId, textId, lastAttemptAt, totalAttempts, bestWpm, bestAccuracy`. Historial de intentos de un usuario en un `Text` específico. Relaciona con `User` y `Text`.
