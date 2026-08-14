@@ -3,7 +3,7 @@
 ## Estilo
 - Formato: Prettier (backend: `.prettierrc` → `singleQuote: true`, `trailingComma: "all"`, `endOfLine: auto`); ESLint + `eslint-plugin-prettier` enforce it (`apps/Backend/eslint.config.mjs`). Frontend usa `eslint-config-next` (`apps/Frontend/eslint.config.mjs`) [PENDIENTE: confirmar si hay `.prettierrc` propio en Frontend o si solo hereda reglas de Next]
 - Naming: módulos backend en `kebab-case` de carpeta + `PascalCase` de clase (`typing-sessions/typing-sessions.service.ts` → `TypingSessionsService`); componentes frontend en `PascalCase.tsx` (`AuthInput.tsx`, `LoginForm.tsx`)
-- Imports: [PENDIENTE: no hay regla de ESLint para orden de imports ni alias configurados explícitamente — confirmar si se usan imports absolutos vía `tsconfig.json` paths]
+- Imports: Frontend usa alias `@/*` → `./src/*` (`apps/Frontend/tsconfig.json`, líneas 21-23); imports absolutos activamente usados en todo `src/` (p.ej. `useAuth.ts`, `Navbar.tsx`, `lib/api/auth.ts`). [PENDIENTE: no hay regla de ESLint explícita para orden de imports]
 
 ## Patrones que SÍ usamos
 - Módulos NestJS por dominio, cada uno con `*.module.ts` + `*.controller.ts` + `*.service.ts` (ver `apps/Backend/src/modules/*`)
