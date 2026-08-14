@@ -9,7 +9,7 @@ Plataforma de mecanografía (typing platform): backend NestJS con PostgreSQL/Pri
 - Base de datos: PostgreSQL vía Prisma 5.22 (`apps/Backend/prisma/schema.prisma`)
 - Auth: Passport + `@nestjs/jwt` (JWT), hashing con `bcrypt`
 - Estilos frontend: Tailwind CSS 4
-- Servicios externos: [PENDIENTE: no se detectan integraciones externas (email, storage, pagos, etc.) en package.json — confirmar si existen]
+- Servicios externos: [PENDIENTE: no se detectan integraciones externas (email, storage, pagos, etc.) en package.json - confirmar si existen]
 
 ## Mapa de carpetas
 - `apps/Backend/src/modules/` → módulos de dominio (uno por feature: `auth`, `users`, `text`, `typing-sessions`, `admin`)
@@ -27,6 +27,6 @@ Plataforma de mecanografía (typing platform): backend NestJS con PostgreSQL/Pri
 El frontend (`apps/Frontend/src/lib/api/client.ts`) llama a la API NestJS. Las rutas protegidas pasan por un guard JWT (`apps/Backend/src/modules/auth/guards/`) que valida el token y expone el usuario vía `@current-user.decorator.ts`. Los controladores (`*.controller.ts`) delegan en servicios (`*.service.ts`), que usan `PrismaService` para leer/escribir en PostgreSQL. Catálogos (`Difficulty`, `Language`) y `Text` se filtran server-side antes de servirse a una `TypingSession`.
 
 ## Lo que NO existe (y no hay que crear)
-- No hay capa de caché (Redis ni en memoria) — no la introduzcas sin que se decida explícitamente.
-- No hay tests configurados en el frontend (`apps/Frontend`) — no asumas un `npm test` ahí.
+- No hay capa de caché (Redis ni en memoria). No la introduzcas sin que se decida explícitamente.
+- No hay tests configurados en el frontend (`apps/Frontend`). No asumas un `npm test` ahí.
 - [PENDIENTE: confirmar si hay WebSockets/tiempo real para sesiones de mecanografía en vivo, o si todo es request/response]
