@@ -104,9 +104,10 @@ describe('TextService', () => {
       };
       await service.listTexts({ page: 1, limit: 10 }, filter);
 
-      const whereUsed = mockPrisma.text.findMany.mock.calls[0][0] as {
-        where: Prisma.TextWhereInput;
-      };
+      const call = mockPrisma.text.findMany.mock.calls[0] as [
+        { where: Prisma.TextWhereInput },
+      ];
+      const whereUsed = call[0];
       expect(whereUsed.where.difficultyId).toBe(1);
       expect(whereUsed.where.typeId).toBe(2);
       expect(whereUsed.where.languageId).toBe(1);

@@ -87,7 +87,9 @@ describe('TextController', () => {
 
       const createTextSpy = jest
         .spyOn(service, 'createText')
-        .mockResolvedValue(result as any);
+        .mockResolvedValue(
+          result as unknown as Awaited<ReturnType<typeof service.createText>>,
+        );
 
       const response = await controller.createText(createTextDto, mockRequest);
 
@@ -140,7 +142,9 @@ describe('TextController', () => {
 
       const updateTextSpy = jest
         .spyOn(service, 'updateText')
-        .mockResolvedValue(result as any);
+        .mockResolvedValue(
+          result as unknown as Awaited<ReturnType<typeof service.updateText>>,
+        );
 
       const response = await controller.updateText(1, updateTextDto);
 
@@ -173,7 +177,9 @@ describe('TextController', () => {
 
       const getTextByIdSpy = jest
         .spyOn(service, 'getTextById')
-        .mockResolvedValue(result as any);
+        .mockResolvedValue(
+          result as unknown as Awaited<ReturnType<typeof service.getTextById>>,
+        );
 
       const response = await controller.getTextById(1);
 
