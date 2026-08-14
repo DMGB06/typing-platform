@@ -6,12 +6,19 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '../../Prisma/prisma.module';
 import { PassportModule } from '@nestjs/passport';
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error(
+    'JWT_SECRET no está definido. Copiá apps/Backend/.env.example a .env y completá los valores.',
+  );
+}
+
 @Module({
   imports: [
     PrismaModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'tu-secreto-muy-seguro',
+      secret: jwtSecret,
       signOptions: { expiresIn: '1d' },
     }),
   ],
