@@ -278,4 +278,23 @@ export class UsersService {
       console.error('Error al obtener perfil:', error);
     }
   }
+
+  // Estadísticas del usuario por dificultad
+  async getMyStats(userId: number) {
+    const stats = await this.prisma.userStatsByDifficulty.findMany({
+      where: { userId },
+      include: { difficulty: true },
+      orderBy: { difficulty: { orderIndex: 'asc' } },
+    });
+
+    return stats.map((s) => ({
+      difficultyId: s.difficultyId,
+      difficultyName: s.difficulty.name,
+      bestWpm: s.bestWpm,
+      avgWpm: s.avgWpm,
+      avgAccuracy: s.avgAccuracy,
+      totalSessions: s.totalSessions,
+      avgErrorRate: s.avgErrorRate,
+    }));
+  }
 }
