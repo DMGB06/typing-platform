@@ -280,7 +280,19 @@ export class UsersService {
   }
 
   // Estadísticas del usuario por dificultad
-  async getMyStats(userId: number) {
+  async getMyStats(
+    userId: number,
+  ): Promise<
+    Array<{
+      difficultyId: number;
+      difficultyName: string;
+      bestWpm: number;
+      avgWpm: number;
+      avgAccuracy: number;
+      totalSessions: number;
+      avgErrorRate: number;
+    }>
+  > {
     const stats = await this.prisma.userStatsByDifficulty.findMany({
       where: { userId },
       include: { difficulty: true },
