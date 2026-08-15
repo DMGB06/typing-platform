@@ -1,45 +1,128 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { useAuth } from '@/hooks/useAuth';
+import { useCatalogs } from '@/hooks/useCatalogs';
+import { getMyPreferences, updateMyPreferences } from '@/lib/api/users';
 
-/**
- * Página de Configuración
- *
- * TODO: Implementar con:
- * - Tema (claro/oscuro/personalizado)
- * - Idioma de la interfaz
- * - Preferencias de práctica (duración, dificultad por defecto)
- * - Sonidos y retroalimentación
- * - Configuración de cuenta
- * - Requiere autenticación para guardar preferencias
- */
 export default function SettingsPage() {
+  const { ready, isLoggedIn } = useAuth();
+  const router = useRouter();
+  const { catalogs, loading: loadingCatalogs } = useCatalogs();
+
+  const [defaultDifficultyId, setDefaultDifficultyId] = useState<number | null>(null);
+  const [loadingPreferences, setLoadingPreferences] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    if (!isLoggedIn) {
+      router.push('/auth/login');
+      return;
+    }
+
+    const fetchPreferences = async () => {
+      setLoadingPreferences(true);
+      setError(null);
+      try {
+        const data = await getMyPreferences();
+        setDefaultDifficultyId(data.defaultDifficultyId);
+      } catch (err) {
+        console.error('Error al cargar las preferencias:', err);
+        setError('No se pudieron cargar tus preferencias.');
+      } finally {
+        setLoadingPreferences(false);
+      }
+    };
+
+    fetchPreferences();
+  }, [ready, isLoggedIn, router]);
+
+  const handleSelectDifficulty = async (difficultyId: number) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const data = await updateMyPreferences(difficultyId);
+      setDefaultDifficultyId(data.defaultDifficultyId);
+    } catch (err) {
+      console.error('Error al guardar la preferencia:', err);
+      setError('No se pudo guardar tu preferencia.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen min-w-full flex flex-col px-2 lg:px-24">
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center py-12">
-        <div className="text-center space-y-4">
-          <div
-            className="flex items-center justify-center w-16 h-16 rounded-2xl mx-auto border"
-            style={{
-              borderColor: 'var(--color-bg-tertiary)',
-              backgroundColor: 'var(--color-bg-secondary)',
-            }}
-          >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} style={{ color: 'var(--color-text-tertiary)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+      <main className="flex-1 py-12">
+        {ready && isLoggedIn && (
+          <div className="max-w-2xl mx-auto space-y-8">
+            <div className="text-center space-y-2">
+              <h1
+                className="text-xl font-semibold"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
+                Configuración
+              </h1>
+              <p
+                className="text-sm"
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                Dificultad por defecto al empezar a practicar.
+              </p>
+            </div>
+
+            {(loadingCatalogs || loadingPreferences) && (
+              <p
+                className="text-center text-sm"
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                Cargando preferencias...
+              </p>
+            )}
+
+            {error && (
+              <p
+                className="text-center text-sm"
+                style={{ color: 'var(--color-error)' }}
+              >
+                {error}
+              </p>
+            )}
+
+            {!loadingCatalogs && !loadingPreferences && catalogs.difficulties.length > 0 && (
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {catalogs.difficulties.map((diff) => (
+                  <button
+                    key={diff.id}
+                    onClick={() => handleSelectDifficulty(diff.id)}
+                    disabled={saving}
+                    className="px-3 py-1.5 text-[13px] font-medium rounded-md transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      backgroundColor:
+                        defaultDifficultyId === diff.id
+                          ? 'var(--color-accent)'
+                          : 'var(--color-bg-secondary)',
+                      color:
+                        defaultDifficultyId === diff.id
+                          ? 'var(--color-bg-primary)'
+                          : 'var(--color-text-secondary)',
+                    }}
+                  >
+                    {diff.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <h1 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-            Configuración
-          </h1>
-          <p className="text-sm max-w-xs mx-auto" style={{ color: 'var(--color-text-tertiary)' }}>
-            Próximamente podrás personalizar tu experiencia: temas, idioma, preferencias de práctica y más.
-          </p>
-        </div>
+        )}
       </main>
 
       <Footer />
