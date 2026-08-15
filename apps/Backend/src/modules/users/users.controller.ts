@@ -98,4 +98,17 @@ export class UsersController {
 
     return this.usersService.getUserById(currentUser.id);
   }
+
+  // Obtener las estadísticas propias por dificultad
+  @Get('me/stats')
+  @UseGuards(JwtAuthGuard) // Solo usuarios autenticados
+  async getMyStats(@Req() req: Request) {
+    const currentUser = req.user as CurrentUser;
+
+    if (!currentUser) {
+      throw new ForbiddenException('Usuario no autenticado');
+    }
+
+    return this.usersService.getMyStats(currentUser.id);
+  }
 }
