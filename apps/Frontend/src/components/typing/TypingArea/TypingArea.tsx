@@ -23,9 +23,16 @@ export const TypingArea: React.FC = () => {
 
   // Dificultad preferida del usuario logueado (null = no aplica o no hay preferencia)
   const [preferredDifficultyId, setPreferredDifficultyId] = useState<number | null>(null);
+  // true una vez que ya sabemos si hay (o no hay) preferencia que aplicar
+  const [preferenceLoaded, setPreferenceLoaded] = useState(false);
 
   useEffect(() => {
-    if (!ready || !isLoggedIn) return;
+    if (!ready) return;
+
+    if (!isLoggedIn) {
+      setPreferenceLoaded(true);
+      return;
+    }
 
     let cancelled = false;
 
@@ -35,6 +42,9 @@ export const TypingArea: React.FC = () => {
       })
       .catch((err) => {
         console.error('Error al cargar la dificultad preferida:', err);
+      })
+      .finally(() => {
+        if (!cancelled) setPreferenceLoaded(true);
       });
 
     return () => {
@@ -44,7 +54,7 @@ export const TypingArea: React.FC = () => {
 
   // Calcular defaults derivados de los catálogos y la preferencia guardada (sin efecto propio)
   const defaultFilters = useMemo<FilterState>(() => {
-    if (loadingCatalogs) {
+    if (loadingCatalogs || !preferenceLoaded) {
       return { typeId: null, difficultyId: null, languageId: null };
     }
 
@@ -64,7 +74,7 @@ export const TypingArea: React.FC = () => {
         catalogs.languages[0]?.id ??
         null,
     };
-  }, [catalogs, loadingCatalogs, preferredDifficultyId]);
+  }, [catalogs, loadingCatalogs, preferredDifficultyId, preferenceLoaded]);
 
   // Los filtros del usuario; null = todavía no personalizó nada
   const [userFilters, setUserFilters] = useState<FilterState | null>(null);
