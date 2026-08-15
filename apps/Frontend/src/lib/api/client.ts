@@ -4,13 +4,30 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-// ── User helpers ─────────────────────────────────────────────
+// ── Error tipado ─────────────────────────────────────────────
+// Preserva el status HTTP para que los callers puedan reaccionar a casos
+// específicos (ej. 401 = sesión vencida) sin parsear el mensaje.
+
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+// ── Store compartido del usuario ────────────────────────────
 // Cache no sensible del usuario, solo para pintar la UI al instante.
 // La sesión real vive en la cookie httpOnly, no acá.
+// Compartido entre todos los componentes que usan useAuth() (no un
+// useState por componente), para que un logout o una sesión vencida
+// detectada en cualquier fetch se reflejen en toda la app al instante.
 
 const USER_KEY = "auth_user";
 
-export function getStoredUser<T = unknown>(): T | null {
+function readStoredUser<T = unknown>(): T | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(USER_KEY);
@@ -20,12 +37,43 @@ export function getStoredUser<T = unknown>(): T | null {
   }
 }
 
+let currentUser: unknown = null;
+let currentUserInitialized = false;
+const listeners = new Set<() => void>();
+
+function notifyListeners(): void {
+  listeners.forEach((listener) => listener());
+}
+
+export function subscribeUser(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function getUserSnapshot<T = unknown>(): T | null {
+  if (!currentUserInitialized) {
+    currentUser = readStoredUser<T>();
+    currentUserInitialized = true;
+  }
+  return currentUser as T | null;
+}
+
+export function getStoredUser<T = unknown>(): T | null {
+  return getUserSnapshot<T>();
+}
+
 export function setStoredUser(user: unknown): void {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  currentUser = user;
+  currentUserInitialized = true;
+  notifyListeners();
 }
 
 export function removeStoredUser(): void {
   localStorage.removeItem(USER_KEY);
+  currentUser = null;
+  currentUserInitialized = true;
+  notifyListeners();
 }
 
 // ── Fetch wrapper ────────────────────────────────────────────
@@ -51,10 +99,17 @@ export async function apiClient<T>(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Sesión vencida o inválida: limpiamos el store compartido para que
+      // toda la app (no solo el componente que hizo este fetch) deje de
+      // mostrar al usuario como logueado.
+      removeStoredUser();
+    }
+
     const error = await response
       .json()
       .catch(() => ({ message: response.statusText }));
-    throw new Error(error.message || `Error ${response.status}`);
+    throw new ApiError(error.message || `Error ${response.status}`, response.status);
   }
 
   return response.json();

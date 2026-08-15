@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useCallback, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { AuthUser } from "@/types";
-import { getStoredUser } from "@/lib/api/client";
+import { subscribeUser, getUserSnapshot } from "@/lib/api/client";
 import { logout as logoutRequest } from "@/lib/api/auth";
 
 // Truco: useSyncExternalStore con suscripción vacía devuelve
 // false en servidor y true en cliente → evita mismatch SSR/CSR sin useEffect
 const noopSubscribe = () => () => {};
+
+// user viene de un store compartido a nivel de módulo (client.ts), no de un
+// useState local: así, un logout o una sesión vencida detectada en cualquier
+// fetch se reflejan de inmediato en todos los componentes que usan este hook,
+// no solo en el que disparó el cambio.
+const getServerUserSnapshot = () => null;
 
 export interface UseAuthReturn {
   user: AuthUser | null;
@@ -20,12 +26,11 @@ export interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const router = useRouter();
 
-  // Lazy initializer: server → null, cliente → valor real de localStorage
-  // No usa useEffect, por lo que no hay renders en cascada
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    if (typeof window === "undefined") return null;
-    return getStoredUser<AuthUser>();
-  });
+  const user = useSyncExternalStore(
+    subscribeUser,
+    () => getUserSnapshot<AuthUser>(),
+    getServerUserSnapshot,
+  );
 
   // ready: false en SSR, true en cliente — impide hydration mismatch en Navbar
   const ready = useSyncExternalStore(noopSubscribe, () => true, () => false);
@@ -36,7 +41,8 @@ export function useAuth(): UseAuthReturn {
     } catch (error) {
       console.error("No se pudo cerrar sesión en el servidor, se limpió la sesión localmente:", error);
     } finally {
-      setUser(null);
+      // logoutRequest() ya limpia el store compartido (client.ts) en su
+      // propio finally, tanto si el backend respondió bien como si falló.
       router.push("/");
     }
   }, [router]);
