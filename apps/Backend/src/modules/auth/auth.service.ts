@@ -2,13 +2,13 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
-  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../Prisma/prisma.service';
 import { RegisterUserDto } from './dto/register_user_dto';
 import { LoginUserDto } from './dto/login_user_dto';
-import * as bycript from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +19,6 @@ export class AuthService {
 
   async register(registerUserDto: RegisterUserDto) {
     const existeUser = await this.prisma.user.findFirst({
-      //Usamos le findFirst para buscar un usuario que tenga el mismo email o username
       where: {
         OR: [
           { email: registerUserDto.email },
@@ -28,15 +27,12 @@ export class AuthService {
       },
     });
 
-    //Si existe un usuario con el mismo email o username, lanzamos un error
     if (existeUser) {
       throw new BadRequestException('El usuario ya existe');
     }
 
-    //Hasheamos la contraseña antes de guardarla en la base de datos
-    const hashPassword = await bycript.hash(registerUserDto.password, 10);
+    const hashPassword = await bcrypt.hash(registerUserDto.password, 10);
 
-    //Creamos el usuario en la base de datos con el hash de la contraseña
     try {
       const user = await this.prisma.user.create({
         data: {
@@ -46,7 +42,6 @@ export class AuthService {
         },
       });
 
-      //Creacion del token
       const token = this.generateToken(user.id, user.email, user.role);
 
       return {
@@ -58,8 +53,8 @@ export class AuthService {
         },
         token,
       };
-    } catch (error) {
-      console.log('Error al registrar usuario:', error);
+    } catch {
+      throw new InternalServerErrorException('No se pudo registrar el usuario');
     }
   }
 
@@ -71,16 +66,16 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const isPasswordValid = await bycript.compare(
+    const isPasswordValid = await bcrypt.compare(
       loginUserDto.password,
       user.passwordHash,
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Contraseña incorrecta');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     if (!user.isActive) {
@@ -102,8 +97,8 @@ export class AuthService {
           user.isActive,
         ),
       };
-    } catch (error) {
-      console.error('Error al generar token:', error);
+    } catch {
+      throw new InternalServerErrorException('No se pudo iniciar sesión');
     }
   }
 
