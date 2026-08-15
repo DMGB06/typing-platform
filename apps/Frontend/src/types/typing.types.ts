@@ -61,3 +61,13 @@ export interface TypingSessionResponse {
   improvementRate: number | null;
   createdAt: string;
 }
+
+export interface UserStatsResponse {
+  difficultyId: number;
+  difficultyName: string;
+  bestWpm: number;
+  avgWpm: number;
+  avgAccuracy: number;
+  totalSessions: number;
+  avgErrorRate: number;
+}

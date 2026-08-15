@@ -3,6 +3,7 @@
  *
  * Endpoints:
  * - POST /typing-sessions — Guarda el resultado de una sesión completa
+ * - GET /typing-sessions  — Sesiones recientes del usuario autenticado
  */
 
 import type {
@@ -18,4 +19,8 @@ export function createTypingSession(
     method: "POST",
     body: data,
   });
+}
+
+export function getMyRecentSessions(): Promise<TypingSessionResponse[]> {
+  return apiClient<TypingSessionResponse[]>("/typing-sessions");
 }
