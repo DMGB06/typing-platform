@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import type { TypingDisplayProps, Text } from '@/types';
 import { getRandomText } from '@/lib/api/texts';
+import { createTypingSession } from '@/lib/api/typing-sessions';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Componente TypingDisplay - Display del texto y estadísticas
@@ -18,9 +21,11 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
   onStart,
   onReset,
 }) => {
+  const { isLoggedIn } = useAuth();
+
   // Estado del texto y tipeo
   const [text, setText] = useState('');
-  const [, setTextData] = useState<Text | null>(null);
+  const [textData, setTextData] = useState<Text | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userInput, setUserInput] = useState('');
@@ -30,6 +35,8 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
   const [wpm, setWpm] = useState(0);
   const [accuracy, setAccuracy] = useState(100);
   const [timeSeconds, setTimeSeconds] = useState(0);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [showLoginHint, setShowLoginHint] = useState(false);
 
   // Obtener texto basado en filtros desde la API
   useEffect(() => {
@@ -67,6 +74,8 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
     setAccuracy(100);
     setTimeSeconds(0);
     setStartTime(null);
+    setSaveError(null);
+    setShowLoginHint(false);
   }, [filters]);
 
   // Timer
@@ -88,6 +97,47 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
     return () => clearInterval(interval);
   }, [isStarted, startTime, userInput]);
 
+  // Calcula las estadísticas finales en el instante exacto en que se termina
+  // de escribir (no reusa wpm/timeSeconds del setInterval, que se actualiza
+  // cada 100ms y puede estar levemente desactualizado en el último tecleo).
+  const handleComplete = async (finalInput: string, finalErrorsCount: number) => {
+    if (!textData || !startTime) return;
+
+    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+    const words = finalInput.trim().split(' ').length;
+    const minutes = elapsedSeconds / 60;
+    const finalWpm = minutes > 0 ? Math.round(words / minutes) : 0;
+    const finalAccuracy = Math.max(
+      0,
+      Math.round(((finalInput.length - finalErrorsCount) / finalInput.length) * 100),
+    );
+    const finalErrorRate = Math.min(
+      100,
+      Math.round((finalErrorsCount / finalInput.length) * 100),
+    );
+
+    if (!isLoggedIn) {
+      setShowLoginHint(true);
+      return;
+    }
+
+    try {
+      setSaveError(null);
+      await createTypingSession({
+        textId: textData.id,
+        // wpm y timeSeconds exigen @IsPositive() en el backend: si se
+        // completó en menos de un segundo, se omiten en vez de mandar 0.
+        ...(finalWpm > 0 ? { wpm: finalWpm } : {}),
+        accuracy: finalAccuracy,
+        ...(elapsedSeconds > 0 ? { timeSeconds: elapsedSeconds } : {}),
+        errorRate: finalErrorRate,
+      });
+    } catch (err) {
+      console.error('Error al guardar la sesión:', err);
+      setSaveError('No se pudo guardar tu resultado.');
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (!isStarted) {
       onStart();
@@ -104,7 +154,8 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
       setCurrentIndex(newInput.length);
 
       // Verificar errores
-      if (text[newInput.length - 1] !== e.key) {
+      const isError = text[newInput.length - 1] !== e.key;
+      if (isError) {
         setErrors(prev => prev + 1);
       }
 
@@ -114,6 +165,8 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
 
       // Verificar si terminó
       if (newInput.length === text.length) {
+        const finalErrorsCount = isError ? errors + 1 : errors;
+        void handleComplete(newInput, finalErrorsCount);
         onReset();
       }
     }
@@ -127,6 +180,8 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
     setAccuracy(100);
     setTimeSeconds(0);
     setStartTime(null);
+    setSaveError(null);
+    setShowLoginHint(false);
     onReset();
   };
 
@@ -293,6 +348,21 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Aviso de guardado (login o error) */}
+      {showLoginHint && (
+        <p className="text-center text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+          <Link href="/auth/login" className="underline hover:opacity-80">
+            Inicia sesión
+          </Link>{' '}
+          para guardar tu progreso.
+        </p>
+      )}
+      {saveError && (
+        <p className="text-center text-sm" style={{ color: 'var(--color-error)' }}>
+          {saveError}
+        </p>
+      )}
     </div>
   );
 };
