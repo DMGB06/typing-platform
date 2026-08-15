@@ -1,27 +1,12 @@
 /**
- * Cliente HTTP base — centraliza fetch, headers y manejo de token
+ * Cliente HTTP base — centraliza fetch y headers
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-const TOKEN_KEY = "auth_token";
-
-// ── Token helpers ────────────────────────────────────────────
-
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function removeToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
 // ── User helpers ─────────────────────────────────────────────
+// Cache no sensible del usuario, solo para pintar la UI al instante.
+// La sesión real vive en la cookie httpOnly, no acá.
 
 const USER_KEY = "auth_user";
 
@@ -48,29 +33,20 @@ export function removeStoredUser(): void {
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
-  auth?: boolean; // true = envía Bearer token
 }
 
 export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", body, auth = false } = options;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (auth) {
-    const token = getToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-  }
+  const { method = "GET", body } = options;
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method,
-    headers,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
 

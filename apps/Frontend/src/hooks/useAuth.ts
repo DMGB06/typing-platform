@@ -3,7 +3,8 @@
 import { useState, useCallback, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { AuthUser } from "@/types";
-import { getStoredUser, removeToken, removeStoredUser } from "@/lib/api/client";
+import { getStoredUser } from "@/lib/api/client";
+import { logout as logoutRequest } from "@/lib/api/auth";
 
 // Truco: useSyncExternalStore con suscripción vacía devuelve
 // false en servidor y true en cliente → evita mismatch SSR/CSR sin useEffect
@@ -13,7 +14,7 @@ export interface UseAuthReturn {
   user: AuthUser | null;
   isLoggedIn: boolean;
   ready: boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -29,11 +30,15 @@ export function useAuth(): UseAuthReturn {
   // ready: false en SSR, true en cliente — impide hydration mismatch en Navbar
   const ready = useSyncExternalStore(noopSubscribe, () => true, () => false);
 
-  const logout = useCallback(() => {
-    removeToken();
-    removeStoredUser();
-    setUser(null);
-    router.push("/");
+  const logout = useCallback(async () => {
+    try {
+      await logoutRequest();
+    } catch (error) {
+      console.error("No se pudo cerrar sesión en el servidor, se limpió la sesión localmente:", error);
+    } finally {
+      setUser(null);
+      router.push("/");
+    }
   }, [router]);
 
   return { user, isLoggedIn: !!user, ready, logout };
