@@ -4,12 +4,14 @@ import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/register_user_dto';
 import { LoginUserDto } from './dto/login_user_dto';
 import { ACCESS_TOKEN_COOKIE } from './auth.constants';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async register(
     @Body() registerUserDto: RegisterUserDto,
     @Res({ passthrough: true }) res: Response,
@@ -20,6 +22,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
