@@ -15,16 +15,16 @@ export class LeaderboardService {
       totalSessions: number;
     }>
   > {
-    const difficulty = await this.prisma.difficulty.findUnique({
-      where: { id: difficultyId },
+    const difficulty = await this.prisma.difficulty.findFirst({
+      where: { id: difficultyId, isActive: true },
     });
     if (!difficulty) {
       throw new NotFoundException(`Dificultad ${difficultyId} no encontrada`);
     }
 
     const stats = await this.prisma.userStatsByDifficulty.findMany({
-      where: { difficultyId },
-      orderBy: { bestWpm: 'desc' },
+      where: { difficultyId, user: { isActive: true } },
+      orderBy: [{ bestWpm: 'desc' }, { avgAccuracy: 'desc' }],
       take: 10,
       select: {
         bestWpm: true,

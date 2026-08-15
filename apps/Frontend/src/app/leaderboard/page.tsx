@@ -8,7 +8,7 @@ import { getLeaderboard } from '@/lib/api/leaderboard';
 import type { LeaderboardEntry } from '@/types';
 
 export default function LeaderboardPage() {
-  const { catalogs, loading: loadingCatalogs } = useCatalogs();
+  const { catalogs, loading: loadingCatalogs, error: catalogsError } = useCatalogs();
 
   const [difficultyId, setDifficultyId] = useState<number | null>(null);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -72,7 +72,16 @@ export default function LeaderboardPage() {
             </p>
           </div>
 
-          {!loadingCatalogs && catalogs.difficulties.length > 0 && (
+          {catalogsError && (
+            <p
+              className="text-center text-sm"
+              style={{ color: 'var(--color-error)' }}
+            >
+              {catalogsError}
+            </p>
+          )}
+
+          {!loadingCatalogs && !catalogsError && catalogs.difficulties.length > 0 && (
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {catalogs.difficulties.map((diff) => (
                 <button
@@ -96,7 +105,7 @@ export default function LeaderboardPage() {
             </div>
           )}
 
-          {loading && (
+          {(loading || loadingCatalogs) && !catalogsError && (
             <p
               className="text-center text-sm"
               style={{ color: 'var(--color-text-tertiary)' }}
