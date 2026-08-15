@@ -8,6 +8,7 @@ import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './Prisma/prisma.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { TextModule } from './modules/text/text.module';
+import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TextModule } from './modules/text/text.module';
     UsersModule,
     AdminModule,
     TextModule,
+    LeaderboardModule,
   ],
   controllers: [AppController],
   providers: [
