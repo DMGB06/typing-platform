@@ -78,3 +78,7 @@ export interface LeaderboardEntry {
   avgAccuracy: number;
   totalSessions: number;
 }
+
+export interface UserPreferences {
+  defaultDifficultyId: number | null;
+}
