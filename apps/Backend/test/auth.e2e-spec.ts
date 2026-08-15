@@ -7,6 +7,10 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/Prisma/prisma.service';
 import { configureApp } from '../src/main';
 
+// supertest's agent runs over plain HTTP (no TLS), so the Secure cookie
+// wouldn't be replayed on follow-up requests otherwise.
+process.env.COOKIE_SECURE = 'false';
+
 describe('Auth (e2e)', () => {
   let app: INestApplication<App>;
 
