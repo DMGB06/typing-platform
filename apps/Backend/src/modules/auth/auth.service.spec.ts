@@ -114,18 +114,18 @@ describe('AuthService', () => {
     it('throws UnauthorizedException with a generic message if the email does not exist', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.login(dto)).rejects.toThrow(
-        new UnauthorizedException('Credenciales inválidas'),
-      );
+      const error = await service.login(dto).catch((e: unknown) => e as Error);
+      expect(error).toBeInstanceOf(UnauthorizedException);
+      expect(error.message).toBe('Credenciales inválidas');
     });
 
     it('throws the same generic message if the password is wrong', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(storedUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.login(dto)).rejects.toThrow(
-        new UnauthorizedException('Credenciales inválidas'),
-      );
+      const error = await service.login(dto).catch((e: unknown) => e as Error);
+      expect(error).toBeInstanceOf(UnauthorizedException);
+      expect(error.message).toBe('Credenciales inválidas');
     });
 
     it('throws UnauthorizedException if the user is inactive', async () => {
@@ -137,6 +137,18 @@ describe('AuthService', () => {
 
       await expect(service.login(dto)).rejects.toThrow(
         new UnauthorizedException('Usuario inactivo'),
+      );
+    });
+
+    it('throws InternalServerErrorException if jwtService.sign fails', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(storedUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockJwtService.sign.mockImplementation(() => {
+        throw new Error('sign failed');
+      });
+
+      await expect(service.login(dto)).rejects.toThrow(
+        InternalServerErrorException,
       );
     });
 
