@@ -11,7 +11,7 @@ import { getMyPreferences, updateMyPreferences } from '@/lib/api/users';
 export default function SettingsPage() {
   const { ready, isLoggedIn } = useAuth();
   const router = useRouter();
-  const { catalogs, loading: loadingCatalogs } = useCatalogs();
+  const { catalogs, loading: loadingCatalogs, error: catalogsError } = useCatalogs();
 
   const [defaultDifficultyId, setDefaultDifficultyId] = useState<number | null>(null);
   const [loadingPreferences, setLoadingPreferences] = useState(true);
@@ -79,7 +79,16 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            {(loadingCatalogs || loadingPreferences) && (
+            {catalogsError && (
+              <p
+                className="text-center text-sm"
+                style={{ color: 'var(--color-error)' }}
+              >
+                {catalogsError}
+              </p>
+            )}
+
+            {(loadingCatalogs || loadingPreferences) && !catalogsError && (
               <p
                 className="text-center text-sm"
                 style={{ color: 'var(--color-text-tertiary)' }}
@@ -97,7 +106,7 @@ export default function SettingsPage() {
               </p>
             )}
 
-            {!loadingCatalogs && !loadingPreferences && catalogs.difficulties.length > 0 && (
+            {!loadingCatalogs && !loadingPreferences && !catalogsError && catalogs.difficulties.length > 0 && (
               <div className="flex items-center justify-center gap-2 flex-wrap">
                 {catalogs.difficulties.map((diff) => (
                   <button
