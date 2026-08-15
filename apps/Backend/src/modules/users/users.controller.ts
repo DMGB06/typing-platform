@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/wt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { AdminCreateUserDto, AdminUpdateUserDto } from './dto/admin_user_dto';
 import { UpdateUserDto } from './dto/user_dto';
+import { UpdateUserPreferencesDto } from './dto/user_preferences_dto';
 import type { Request } from 'express';
 import { CurrentUser } from '../../types/user.types';
 
@@ -110,5 +111,37 @@ export class UsersController {
     }
 
     return this.usersService.getMyStats(currentUser.id);
+  }
+
+  // Obtener las preferencias propias (dificultad por defecto)
+  @Get('me/preferences')
+  @UseGuards(JwtAuthGuard) // Solo usuarios autenticados
+  async getMyPreferences(@Req() req: Request) {
+    const currentUser = req.user as CurrentUser;
+
+    if (!currentUser) {
+      throw new ForbiddenException('Usuario no autenticado');
+    }
+
+    return this.usersService.getMyPreferences(currentUser.id);
+  }
+
+  // Actualizar las preferencias propias (dificultad por defecto)
+  @Put('me/preferences')
+  @UseGuards(JwtAuthGuard) // Solo usuarios autenticados
+  async updateMyPreferences(
+    @Body() updatePreferencesDto: UpdateUserPreferencesDto,
+    @Req() req: Request,
+  ) {
+    const currentUser = req.user as CurrentUser;
+
+    if (!currentUser) {
+      throw new ForbiddenException('Usuario no autenticado');
+    }
+
+    return this.usersService.updateMyPreferences(
+      currentUser.id,
+      updatePreferencesDto.defaultDifficultyId,
+    );
   }
 }

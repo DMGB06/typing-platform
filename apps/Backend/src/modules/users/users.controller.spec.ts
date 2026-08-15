@@ -16,6 +16,8 @@ describe('UsersController', () => {
     adminUpdateUser: jest.fn(),
     deleteUser: jest.fn(),
     getMyStats: jest.fn(),
+    getMyPreferences: jest.fn(),
+    updateMyPreferences: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -70,6 +72,59 @@ describe('UsersController', () => {
         ForbiddenException,
       );
       expect(mockUsersService.getMyStats).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getMyPreferences', () => {
+    it('returns the preferences for the authenticated user', async () => {
+      const mockRequest = {
+        user: { id: 1, email: 'ana@test.com', role: 'USER' },
+      } as unknown as Request;
+      mockUsersService.getMyPreferences.mockResolvedValue({
+        defaultDifficultyId: 2,
+      });
+
+      const result = await controller.getMyPreferences(mockRequest);
+
+      expect(mockUsersService.getMyPreferences).toHaveBeenCalledWith(1);
+      expect(result).toEqual({ defaultDifficultyId: 2 });
+    });
+
+    it('throws ForbiddenException if there is no user on the request', async () => {
+      const mockRequest = {} as unknown as Request;
+
+      await expect(controller.getMyPreferences(mockRequest)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockUsersService.getMyPreferences).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateMyPreferences', () => {
+    it('delegates to the service with the authenticated user id and the DTO value', async () => {
+      const mockRequest = {
+        user: { id: 1, email: 'ana@test.com', role: 'USER' },
+      } as unknown as Request;
+      mockUsersService.updateMyPreferences.mockResolvedValue({
+        defaultDifficultyId: 3,
+      });
+
+      const result = await controller.updateMyPreferences(
+        { defaultDifficultyId: 3 },
+        mockRequest,
+      );
+
+      expect(mockUsersService.updateMyPreferences).toHaveBeenCalledWith(1, 3);
+      expect(result).toEqual({ defaultDifficultyId: 3 });
+    });
+
+    it('throws ForbiddenException if there is no user on the request', async () => {
+      const mockRequest = {} as unknown as Request;
+
+      await expect(
+        controller.updateMyPreferences({ defaultDifficultyId: 3 }, mockRequest),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockUsersService.updateMyPreferences).not.toHaveBeenCalled();
     });
   });
 });

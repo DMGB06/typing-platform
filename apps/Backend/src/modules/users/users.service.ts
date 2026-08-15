@@ -309,4 +309,38 @@ export class UsersService {
       avgErrorRate: s.avgErrorRate,
     }));
   }
+
+  // Preferencias del usuario: dificultad por defecto
+  async getMyPreferences(
+    userId: number,
+  ): Promise<{ defaultDifficultyId: number | null }> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { defaultDifficultyId: true },
+    });
+
+    return { defaultDifficultyId: user.defaultDifficultyId };
+  }
+
+  async updateMyPreferences(
+    userId: number,
+    defaultDifficultyId: number,
+  ): Promise<{ defaultDifficultyId: number | null }> {
+    const difficulty = await this.prisma.difficulty.findFirst({
+      where: { id: defaultDifficultyId, isActive: true },
+    });
+    if (!difficulty) {
+      throw new NotFoundException(
+        `Dificultad ${defaultDifficultyId} no encontrada`,
+      );
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { defaultDifficultyId },
+      select: { defaultDifficultyId: true },
+    });
+
+    return { defaultDifficultyId: updated.defaultDifficultyId };
+  }
 }
