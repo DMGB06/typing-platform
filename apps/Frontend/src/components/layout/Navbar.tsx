@@ -162,7 +162,7 @@ export const Navbar: React.FC = () => {
             description="Se eliminará tu sesión activa. Tendrás que iniciar sesión nuevamente."
             confirmLabel="Cerrar sesión"
             cancelLabel="Cancelar"
-            onConfirm={() => { setShowLogoutModal(false); logout(); }}
+            onConfirm={() => { setShowLogoutModal(false); void logout(); }}
             onCancel={() => setShowLogoutModal(false)}
         />
     </>

@@ -31,9 +31,14 @@ export function useAuth(): UseAuthReturn {
   const ready = useSyncExternalStore(noopSubscribe, () => true, () => false);
 
   const logout = useCallback(async () => {
-    await logoutRequest();
-    setUser(null);
-    router.push("/");
+    try {
+      await logoutRequest();
+    } catch (error) {
+      console.error("No se pudo cerrar sesión en el servidor, se limpió la sesión localmente:", error);
+    } finally {
+      setUser(null);
+      router.push("/");
+    }
   }, [router]);
 
   return { user, isLoggedIn: !!user, ready, logout };

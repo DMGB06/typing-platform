@@ -41,6 +41,9 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
  * (el frontend no puede borrarla por su cuenta) y limpia el usuario cacheado.
  */
 export async function logout(): Promise<void> {
-  await apiClient("/auth/logout", { method: "POST" });
-  removeStoredUser();
+  try {
+    await apiClient("/auth/logout", { method: "POST" });
+  } finally {
+    removeStoredUser();
+  }
 }
