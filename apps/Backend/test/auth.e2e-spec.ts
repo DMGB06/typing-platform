@@ -47,4 +47,47 @@ describe('Auth (e2e)', () => {
         expect(res.headers['x-content-type-options']).toBe('nosniff');
       });
   });
+
+  describe('register', () => {
+    it('sets an httpOnly auth cookie and does not return the token in the body', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(null);
+      mockPrismaService.user.create.mockResolvedValue({
+        id: 1,
+        username: 'ana',
+        email: 'ana@test.com',
+        role: 'USER',
+      });
+
+      const res = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          username: 'ana',
+          email: 'ana@test.com',
+          password: 'Password123',
+        })
+        .expect(201);
+
+      expect(res.body).toEqual({
+        user: { id: 1, username: 'ana', email: 'ana@test.com', role: 'USER' },
+      });
+
+      const cookies = res.headers['set-cookie'] as unknown as string[];
+      const authCookie = cookies.find((c) => c.startsWith('access_token='));
+      expect(authCookie).toBeDefined();
+      expect(authCookie).toMatch(/HttpOnly/);
+    });
+  });
+
+  describe('logout', () => {
+    it('clears the auth cookie', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/logout')
+        .expect(201);
+
+      const cookies = res.headers['set-cookie'] as unknown as string[];
+      const authCookie = cookies.find((c) => c.startsWith('access_token='));
+      expect(authCookie).toBeDefined();
+      expect(authCookie).toMatch(/^access_token=;/);
+    });
+  });
 });
