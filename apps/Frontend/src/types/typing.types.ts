@@ -39,3 +39,25 @@ export interface TextFiltersProps {
   catalogs: Catalogs;
   loadingCatalogs?: boolean;
 }
+
+// ── Sesiones de typing ────────────────────────────────────────
+
+export interface CreateTypingSessionRequest {
+  textId: number;
+  wpm?: number;
+  accuracy?: number;
+  timeSeconds?: number;
+  errorRate?: number;
+}
+
+export interface TypingSessionResponse {
+  id: number;
+  userId: number;
+  textId: number;
+  wpm: number | null;
+  accuracy: number | null;
+  timeSeconds: number | null;
+  errorRate: number | null;
+  improvementRate: number | null;
+  createdAt: string;
+}
