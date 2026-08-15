@@ -58,19 +58,25 @@ export function getUserSnapshot<T = unknown>(): T | null {
   return currentUser as T | null;
 }
 
-export function getStoredUser<T = unknown>(): T | null {
-  return getUserSnapshot<T>();
-}
-
 export function setStoredUser(user: unknown): void {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  try {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } catch {
+    // localStorage puede tirar (ej. modo privado de Safari) - el store en
+    // memoria sigue siendo la fuente de verdad para esta pestaña.
+  }
   currentUser = user;
   currentUserInitialized = true;
   notifyListeners();
 }
 
 export function removeStoredUser(): void {
-  localStorage.removeItem(USER_KEY);
+  try {
+    localStorage.removeItem(USER_KEY);
+  } catch {
+    // Ídem setStoredUser - removeStoredUser ahora corre también desde
+    // apiClient en cada 401, no solo desde el logout explícito del usuario.
+  }
   currentUser = null;
   currentUserInitialized = true;
   notifyListeners();
@@ -99,7 +105,14 @@ export async function apiClient<T>(
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
+    // Un 401 de /auth/login o /auth/register significa "credenciales
+    // incorrectas", no "tu sesión existente venció" — no debe borrar una
+    // sesión válida que ya estuviera guardada (ej. un usuario logueado que
+    // vuelve a /auth y tipea mal la contraseña de otra cuenta).
+    const isCredentialsAttempt =
+      endpoint === "/auth/login" || endpoint === "/auth/register";
+
+    if (response.status === 401 && !isCredentialsAttempt) {
       // Sesión vencida o inválida: limpiamos el store compartido para que
       // toda la app (no solo el componente que hizo este fetch) deje de
       // mostrar al usuario como logueado.
