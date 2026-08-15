@@ -71,3 +71,10 @@ export interface UserStatsResponse {
   totalSessions: number;
   avgErrorRate: number;
 }
+
+export interface LeaderboardEntry {
+  username: string;
+  bestWpm: number;
+  avgAccuracy: number;
+  totalSessions: number;
+}
