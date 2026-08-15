@@ -1,25 +1,35 @@
 import { NestFactory } from '@nestjs/core';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+// Se exporta para que los tests e2e configuren la app exactamente igual
+// que bootstrap(), sin duplicar esta lista y sin arrancar un servidor real.
+export function configureApp(app: INestApplication): void {
+  app.use(cookieParser());
+  app.use(helmet());
 
-  // Habilita CORS para permitir peticiones desde el frontend
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'], // Puertos del frontend
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
   });
 
-  // Habilita la validación global
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Elimina propiedades que no están en el DTO
-      forbidNonWhitelisted: true, // Lanza error si hay propiedades no permitidas
-      transform: true, // Transforma los objetos al tipo del DTO
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
+}
 
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  configureApp(app);
   await app.listen(process.env.PORT ?? 3000);
 }
-void bootstrap();
+
+if (require.main === module) {
+  void bootstrap();
+}
