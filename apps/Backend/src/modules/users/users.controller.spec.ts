@@ -18,6 +18,8 @@ describe('UsersController', () => {
     getMyStats: jest.fn(),
     getMyPreferences: jest.fn(),
     updateMyPreferences: jest.fn(),
+    updateMyPassword: jest.fn(),
+    deactivateMyAccount: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -125,6 +127,65 @@ describe('UsersController', () => {
         controller.updateMyPreferences({ defaultDifficultyId: 3 }, mockRequest),
       ).rejects.toThrow(ForbiddenException);
       expect(mockUsersService.updateMyPreferences).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateMyPassword', () => {
+    it('delegates to the service with the authenticated user id and both passwords', async () => {
+      const mockRequest = {
+        user: { id: 1, email: 'ana@test.com', role: 'USER' },
+      } as unknown as Request;
+      mockUsersService.updateMyPassword.mockResolvedValue({ success: true });
+
+      const result = await controller.updateMyPassword(
+        { currentPassword: 'vieja123', newPassword: 'nueva123' },
+        mockRequest,
+      );
+
+      expect(mockUsersService.updateMyPassword).toHaveBeenCalledWith(
+        1,
+        'vieja123',
+        'nueva123',
+      );
+      expect(result).toEqual({ success: true });
+    });
+
+    it('throws ForbiddenException if there is no user on the request', async () => {
+      const mockRequest = {} as unknown as Request;
+
+      await expect(
+        controller.updateMyPassword(
+          { currentPassword: 'vieja123', newPassword: 'nueva123' },
+          mockRequest,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockUsersService.updateMyPassword).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deactivateMyAccount', () => {
+    it('delegates to the service with the authenticated user id', async () => {
+      const mockRequest = {
+        user: { id: 1, email: 'ana@test.com', role: 'USER' },
+      } as unknown as Request;
+      mockUsersService.deactivateMyAccount.mockResolvedValue({
+        username: 'ana',
+        isActive: false,
+      });
+
+      const result = await controller.deactivateMyAccount(mockRequest);
+
+      expect(mockUsersService.deactivateMyAccount).toHaveBeenCalledWith(1);
+      expect(result).toEqual({ username: 'ana', isActive: false });
+    });
+
+    it('throws ForbiddenException if there is no user on the request', async () => {
+      const mockRequest = {} as unknown as Request;
+
+      await expect(controller.deactivateMyAccount(mockRequest)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockUsersService.deactivateMyAccount).not.toHaveBeenCalled();
     });
   });
 });

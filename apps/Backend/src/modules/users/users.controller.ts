@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/wt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { AdminCreateUserDto, AdminUpdateUserDto } from './dto/admin_user_dto';
 import { UpdateUserDto } from './dto/user_dto';
+import { UpdateMyPasswordDto } from './dto/update_password_dto';
 import { UpdateUserPreferencesDto } from './dto/user_preferences_dto';
 import type { Request } from 'express';
 import { CurrentUser } from '../../types/user.types';
@@ -143,5 +144,38 @@ export class UsersController {
       currentUser.id,
       updatePreferencesDto.defaultDifficultyId,
     );
+  }
+
+  // Cambiar la contraseña propia (requiere la contraseña actual)
+  @Put('me/password')
+  @UseGuards(JwtAuthGuard) // Solo usuarios autenticados
+  async updateMyPassword(
+    @Body() updatePasswordDto: UpdateMyPasswordDto,
+    @Req() req: Request,
+  ) {
+    const currentUser = req.user as CurrentUser;
+
+    if (!currentUser) {
+      throw new ForbiddenException('Usuario no autenticado');
+    }
+
+    return this.usersService.updateMyPassword(
+      currentUser.id,
+      updatePasswordDto.currentPassword,
+      updatePasswordDto.newPassword,
+    );
+  }
+
+  // Desactivar (eliminar) la cuenta propia
+  @Put('me/deactivate')
+  @UseGuards(JwtAuthGuard) // Solo usuarios autenticados
+  async deactivateMyAccount(@Req() req: Request) {
+    const currentUser = req.user as CurrentUser;
+
+    if (!currentUser) {
+      throw new ForbiddenException('Usuario no autenticado');
+    }
+
+    return this.usersService.deactivateMyAccount(currentUser.id);
   }
 }
