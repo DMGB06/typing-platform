@@ -9,6 +9,7 @@ import { PrismaModule } from './Prisma/prisma.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { TextModule } from './modules/text/text.module';
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
     AdminModule,
     TextModule,
     LeaderboardModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

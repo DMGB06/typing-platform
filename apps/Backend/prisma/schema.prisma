@@ -35,6 +35,7 @@ model Difficulty {
   texts Text[]
   stats UserStatsByDifficulty[]
   usersWithDefault  User[]
+  notifications Notification[]
 
   @@map("difficulties")
 }
@@ -83,10 +84,11 @@ model User {
   defaultDifficulty   Difficulty? @relation(fields: [defaultDifficultyId], references: [id])
 
   // Relaciones
-  sessions     TypingSession[]
-  stats        UserStatsByDifficulty[]
-  textHistory  UserTextHistory[]
-  createdTexts Text[]
+  sessions      TypingSession[]
+  stats         UserStatsByDifficulty[]
+  textHistory   UserTextHistory[]
+  createdTexts  Text[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -199,4 +201,25 @@ model UserTextHistory {
   @@unique([userId, textId])
   @@index([userId, lastAttemptAt])
   @@map("user_text_history")
+}
+
+// ============================================
+// NOTIFICACIONES
+// ============================================
+
+model Notification {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  difficultyId Int      @map("difficulty_id")
+  wpm          Int
+  isRead       Boolean  @default(false) @map("is_read")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relaciones
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  difficulty Difficulty @relation(fields: [difficultyId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
