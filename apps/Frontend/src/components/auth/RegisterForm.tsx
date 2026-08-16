@@ -132,7 +132,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} noValidate className="space-y-10">
+            <form onSubmit={handleSubmit} noValidate className="space-y-3">
                 {fields.map((field) => (
                     <AuthInput
                         key={field.name}
