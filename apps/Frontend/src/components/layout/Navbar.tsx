@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { GiKeyboard } from "react-icons/gi";
 import { FiSun, FiMoon } from "react-icons/fi";
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { getUnreadCount } from '@/lib/api/notifications';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 /**
@@ -20,6 +21,14 @@ export const Navbar: React.FC = () => {
     const { isLoggedIn, ready, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        if (!ready || !isLoggedIn) return;
+        getUnreadCount()
+            .then((data) => setUnreadCount(data.count))
+            .catch((err) => console.error('Error al cargar notificaciones no leídas:', err));
+    }, [ready, isLoggedIn]);
 
     return (
         <>
@@ -110,7 +119,7 @@ export const Navbar: React.FC = () => {
                         {/* Notificaciones - oculto en móvil pequeño */}
                         <Link
                             href="/notifications"
-                            className="hidden md:flex items-center justify-center w-10 h-10 rounded transition-colors duration-200 hover:bg-[var(--color-hover)]"
+                            className="hidden md:flex items-center justify-center w-10 h-10 rounded transition-colors duration-200 hover:bg-[var(--color-hover)] relative"
                             style={{ color: 'var(--color-text-secondary)' }}
                             aria-label="Notificaciones"
                             title="Notificaciones"
@@ -118,6 +127,14 @@ export const Navbar: React.FC = () => {
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 20 20">
                                 <path d="M10 3c-1.5 0-3 1-3 3v3c0 1.5-1 2-1 2H14s-1-.5-1-2V6c0-2-1.5-3-3-3zM8 14c0 1 1 2 2 2s2-1 2-2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
+                            {unreadCount > 0 && (
+                                <span
+                                    className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-semibold"
+                                    style={{ backgroundColor: 'var(--color-error)', color: 'var(--color-bg-primary)' }}
+                                >
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
                         </Link>
 
                         {/* Perfil de Usuario / Login — condicional según sesión */}

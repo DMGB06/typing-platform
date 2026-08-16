@@ -1,43 +1,127 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { useAuth } from '@/hooks/useAuth';
+import { getMyNotifications, markAllAsRead } from '@/lib/api/notifications';
+import type { NotificationResponse } from '@/types';
 
-/**
- * Página de Notificaciones
- *
- * TODO: Implementar con:
- * - Lista de notificaciones (nuevos logros, records personales, etc.)
- * - Marcar como leída / no leída
- * - Filtros por tipo de notificación
- * - Paginación o scroll infinito
- * - Requiere autenticación
- */
+function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+
+  if (diffMinutes < 1) return 'Recién';
+  if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `Hace ${diffHours} h`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `Hace ${diffDays} d`;
+}
+
 export default function NotificationsPage() {
+  const { ready, isLoggedIn } = useAuth();
+  const router = useRouter();
+
+  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    if (!isLoggedIn) {
+      router.push('/auth/login');
+      return;
+    }
+
+    const fetchNotifications = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getMyNotifications();
+        setNotifications(data);
+        void markAllAsRead().catch((err) => {
+          console.error('Error al marcar notificaciones como leídas:', err);
+        });
+      } catch (err) {
+        console.error('Error al cargar las notificaciones:', err);
+        setError('No se pudieron cargar tus notificaciones.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [ready, isLoggedIn, router]);
+
   return (
     <div className="min-h-screen min-w-full flex flex-col px-2 lg:px-24">
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center py-12">
-        <div className="text-center space-y-4">
-          <div
-            className="flex items-center justify-center w-16 h-16 rounded-2xl mx-auto border"
-            style={{
-              borderColor: 'var(--color-bg-tertiary)',
-              backgroundColor: 'var(--color-bg-secondary)',
-            }}
-          >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} style={{ color: 'var(--color-text-tertiary)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-            </svg>
+      <main className="flex-1 py-12">
+        {ready && isLoggedIn && (
+          <div className="max-w-2xl mx-auto space-y-6">
+            <h1
+              className="text-xl font-semibold text-center"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              Notificaciones
+            </h1>
+
+            {loading && (
+              <p
+                className="text-center text-sm"
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                Cargando notificaciones...
+              </p>
+            )}
+
+            {error && (
+              <p
+                className="text-center text-sm"
+                style={{ color: 'var(--color-error)' }}
+              >
+                {error}
+              </p>
+            )}
+
+            {!loading && !error && notifications.length === 0 && (
+              <p
+                className="text-center text-sm"
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                Todavía no tenés notificaciones.
+              </p>
+            )}
+
+            {!loading && !error && notifications.length > 0 && (
+              <div className="space-y-2">
+                {notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className="rounded-lg p-4 flex items-center justify-between"
+                    style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+                  >
+                    <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                      Nuevo récord: {n.wpm} WPM en {n.difficultyName}
+                    </p>
+                    <span
+                      className="text-xs shrink-0 ml-4"
+                      style={{ color: 'var(--color-text-tertiary)' }}
+                    >
+                      {formatRelativeTime(n.createdAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <h1 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-            Notificaciones
-          </h1>
-          <p className="text-sm max-w-xs mx-auto" style={{ color: 'var(--color-text-tertiary)' }}>
-            Aquí verás tus logros, records personales y novedades. Inicia sesión para comenzar.
-          </p>
-        </div>
+        )}
       </main>
 
       <Footer />
