@@ -21,6 +21,10 @@
   --color-hover: #4a4d52;
   --color-active: #e2b714;
   --color-disabled: #464952;
+
+  /* Podio del leaderboard (1er puesto reutiliza --color-accent, ya dorado) */
+  --color-rank-silver: #9ca3af;
+  --color-rank-bronze: #b87333;
 }
 
 /* Tema claro — sobreescribe los tokens de fondo/texto cuando <html data-theme="light"> */
@@ -41,25 +45,32 @@
 }
 
 /* Estilos base */
-* {
-  margin: 0;
-  box-sizing: border-box;
-}
+/* En @layer base: sin esto, esta regla (sin layer) le gana a CUALQUIER
+   utilidad de Tailwind (que vive en @layer utilities) sin importar
+   especificidad - anulaba mx-auto, space-y-*, mt-*, mb-*, etc. en todo el
+   sitio. Ver CSS Cascade Layers: una regla sin layer siempre gana sobre
+   una regla con layer. */
+@layer base {
+  * {
+    margin: 0;
+    box-sizing: border-box;
+  }
 
-html, body {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  scroll-behavior: smooth;
-}
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    scroll-behavior: smooth;
+  }
 
-body {
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-family: var(--font-sans);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  body {
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 /* Clases personalizadas para mecanografía */
