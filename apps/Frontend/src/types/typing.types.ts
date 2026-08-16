@@ -82,3 +82,12 @@ export interface LeaderboardEntry {
 export interface UserPreferences {
   defaultDifficultyId: number | null;
 }
+
+export interface NotificationResponse {
+  id: number;
+  difficultyId: number;
+  difficultyName: string;
+  wpm: number;
+  isRead: boolean;
+  createdAt: string;
+}
