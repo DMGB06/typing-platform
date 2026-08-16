@@ -23,6 +23,20 @@
   --color-disabled: #464952;
 }
 
+/* Tema claro — sobreescribe los tokens de fondo/texto cuando <html data-theme="light"> */
+[data-theme="light"] {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f4f4f4;
+  --color-bg-tertiary: #e8e8e8;
+
+  --color-text-primary: #232323;
+  --color-text-secondary: #5c5c5c;
+  --color-text-tertiary: #8a8a8a;
+
+  --color-hover: #e0e0e0;
+  --color-disabled: #c4c4c4;
+}
+
 /* Estilos base */
 * {
   margin: 0;
