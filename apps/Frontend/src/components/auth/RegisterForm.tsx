@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { FiUser, FiMail, FiLock, FiUserPlus, FiAlertCircle } from 'react-icons/fi';
 import { AuthInput } from './AuthInput';
 import {
     useAuthForm,
@@ -59,37 +60,11 @@ const fields: FieldConfig[] = [
 // ── Iconos para cada campo ───────────────────────────────────
 
 const fieldIcons: Record<string, React.ReactNode> = {
-    username: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <circle cx="12" cy="8" r="4" />
-            <path strokeLinecap="round" d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" />
-        </svg>
-    ),
-    email: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <rect x="2" y="4" width="20" height="16" rx="2" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M22 7l-10 6L2 7" />
-        </svg>
-    ),
-    confirmEmail: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <rect x="2" y="4" width="20" height="16" rx="2" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M22 7l-10 6L2 7" />
-        </svg>
-    ),
-    password: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0110 0v4" />
-        </svg>
-    ),
-    confirmPassword: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0110 0v4" />
-            <circle cx="12" cy="16" r="1" fill="currentColor" />
-        </svg>
-    ),
+    username: <FiUser className="w-4 h-4" />,
+    email: <FiMail className="w-4 h-4" />,
+    confirmEmail: <FiMail className="w-4 h-4" />,
+    password: <FiLock className="w-4 h-4" />,
+    confirmPassword: <FiLock className="w-4 h-4" />,
 };
 
 // ── Componente ───────────────────────────────────────────────
@@ -122,20 +97,22 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             {/* Header */}
             <div className="flex items-center gap-2.5 mb-4">
                 <div
-                    className="flex items-center justify-center w-8 h-8"
+                    className="flex items-center justify-center w-8 h-8 rounded-lg border"
                     style={{
+                        borderColor: 'var(--color-bg-tertiary)',
+                        backgroundColor: 'var(--color-bg-primary)',
                         color: 'var(--color-text-secondary)',
                     }}
                 >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
+                    <FiUserPlus className="w-4 h-4" />
                 </div>
                 <div>
                     <h2 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
                         Crear cuenta
                     </h2>
-
+                    <p className="text-[11px]" style={{ color: 'var(--color-text-tertiary)' }}>
+                        Únete a la comunidad
+                    </p>
                 </div>
             </div>
 
@@ -149,9 +126,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                         color: 'var(--color-error)',
                     }}
                 >
-                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                    </svg>
+                    <FiAlertCircle className="w-4 h-4 shrink-0" />
                     {serverError}
                 </div>
             )}
@@ -249,9 +224,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                         </>
                     ) : (
                         <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                            </svg>
+                            <FiUserPlus className="w-4 h-4" />
                             Crear cuenta
                         </>
                     )}

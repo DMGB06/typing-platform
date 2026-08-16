@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { FiMail, FiLock, FiLogIn, FiAlertCircle, FiCheck } from 'react-icons/fi';
 import { AuthInput } from './AuthInput';
 import {
   useAuthForm,
@@ -31,18 +32,8 @@ const fields: FieldConfig[] = [
 // ── Iconos ───────────────────────────────────────────────────
 
 const fieldIcons: Record<string, React.ReactNode> = {
-  email: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M22 7l-10 6L2 7" />
-    </svg>
-  ),
-  password: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  ),
+  email: <FiMail className="w-4 h-4" />,
+  password: <FiLock className="w-4 h-4" />,
 };
 
 // ── Componente ───────────────────────────────────────────────
@@ -69,11 +60,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     await loginApi({
       email: vals.email,
       password: vals.password,
+      rememberMe,
     });
-    // Si remember me está activo, podríamos guardar algo extra
-    if (rememberMe) {
-      localStorage.setItem('remember_me', 'true');
-    }
     onSuccess?.();
   });
 
@@ -89,9 +77,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             color: 'var(--color-text-secondary)',
           }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-          </svg>
+          <FiLogIn className="w-4 h-4" />
         </div>
         <div>
           <h2 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
@@ -113,9 +99,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             color: 'var(--color-error)',
           }}
         >
-          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-          </svg>
+          <FiAlertCircle className="w-4 h-4 shrink-0" />
           {serverError}
         </div>
       )}
@@ -158,9 +142,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               }}
             >
               {rememberMe && (
-                <svg className="w-3 h-3" fill="none" stroke="var(--color-bg-primary)" viewBox="0 0 24 24" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                <FiCheck className="w-3 h-3" style={{ color: 'var(--color-bg-primary)' }} strokeWidth={3} />
               )}
             </button>
             <span
@@ -195,9 +177,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </>
           ) : (
             <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-              </svg>
+              <FiLogIn className="w-4 h-4" />
               Iniciar sesión
             </>
           )}

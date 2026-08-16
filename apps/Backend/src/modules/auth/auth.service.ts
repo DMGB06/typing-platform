@@ -4,10 +4,11 @@ import {
   UnauthorizedException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { PrismaService } from '../../Prisma/prisma.service';
 import { RegisterUserDto } from './dto/register_user_dto';
 import { LoginUserDto } from './dto/login_user_dto';
+import { SESSION_EXPIRES_IN, REMEMBER_ME_EXPIRES_IN } from './auth.constants';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -95,6 +96,7 @@ export class AuthService {
           user.email,
           user.role,
           user.isActive,
+          loginUserDto.rememberMe ? REMEMBER_ME_EXPIRES_IN : SESSION_EXPIRES_IN,
         ),
       };
     } catch {
@@ -107,9 +109,10 @@ export class AuthService {
     email: string,
     role: string,
     isActive: boolean = true,
+    expiresIn: JwtSignOptions['expiresIn'] = SESSION_EXPIRES_IN,
   ) {
     const payload = { sub: userId, email, role, isActive };
-    return this.jwtService.sign(payload);
+    return this.jwtService.sign(payload, { expiresIn });
   }
 
   async validateUser(userId: number) {

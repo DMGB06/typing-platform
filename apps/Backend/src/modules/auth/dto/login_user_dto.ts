@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class LoginUserDto {
   //Verificar que sea un email valido
@@ -9,4 +15,9 @@ export class LoginUserDto {
   @IsNotEmpty()
   @IsString()
   password!: string;
+
+  // Si es true, la sesión dura más (ver auth.constants.ts)
+  @IsOptional()
+  @IsBoolean()
+  rememberMe?: boolean;
 }

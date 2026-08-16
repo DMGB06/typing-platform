@@ -3,7 +3,11 @@ import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/register_user_dto';
 import { LoginUserDto } from './dto/login_user_dto';
-import { ACCESS_TOKEN_COOKIE } from './auth.constants';
+import {
+  ACCESS_TOKEN_COOKIE,
+  SESSION_MAX_AGE_MS,
+  REMEMBER_ME_MAX_AGE_MS,
+} from './auth.constants';
 import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
@@ -28,7 +32,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { user, token } = await this.authService.login(loginUserDto);
-    this.setAuthCookie(res, token);
+    this.setAuthCookie(res, token, loginUserDto.rememberMe);
     return { user };
   }
 
@@ -38,12 +42,16 @@ export class AuthController {
     return { success: true };
   }
 
-  private setAuthCookie(res: Response, token: string): void {
+  private setAuthCookie(
+    res: Response,
+    token: string,
+    rememberMe?: boolean,
+  ): void {
     res.cookie(ACCESS_TOKEN_COOKIE, token, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE !== 'false',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: rememberMe ? REMEMBER_ME_MAX_AGE_MS : SESSION_MAX_AGE_MS,
     });
   }
 }

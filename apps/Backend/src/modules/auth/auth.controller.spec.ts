@@ -78,9 +78,35 @@ describe('AuthController', () => {
       expect(res.cookie).toHaveBeenCalledWith(
         ACCESS_TOKEN_COOKIE,
         'signed-jwt',
-        expect.objectContaining({ httpOnly: true, sameSite: 'lax' }),
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: 'lax',
+          maxAge: 24 * 60 * 60 * 1000,
+        }),
       );
       expect(result).toEqual({ user });
+    });
+
+    it('sets a longer-lived cookie when rememberMe is true', async () => {
+      const res = mockResponse();
+      const user = {
+        id: 1,
+        username: 'ana',
+        email: 'ana@test.com',
+        role: 'USER',
+      };
+      mockAuthService.login.mockResolvedValue({ user, token: 'signed-jwt' });
+
+      await controller.login(
+        { email: 'ana@test.com', password: 'Password123', rememberMe: true },
+        res,
+      );
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        ACCESS_TOKEN_COOKIE,
+        'signed-jwt',
+        expect.objectContaining({ maxAge: 30 * 24 * 60 * 60 * 1000 }),
+      );
     });
   });
 

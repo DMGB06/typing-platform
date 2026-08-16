@@ -168,5 +168,27 @@ describe('AuthService', () => {
         token: 'signed-jwt',
       });
     });
+
+    it('signs the token with the short expiry when rememberMe is not set', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(storedUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await service.login(dto);
+
+      expect(mockJwtService.sign).toHaveBeenCalledWith(expect.anything(), {
+        expiresIn: '1d',
+      });
+    });
+
+    it('signs the token with the long expiry when rememberMe is true', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(storedUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await service.login({ ...dto, rememberMe: true });
+
+      expect(mockJwtService.sign).toHaveBeenCalledWith(expect.anything(), {
+        expiresIn: '30d',
+      });
+    });
   });
 });
