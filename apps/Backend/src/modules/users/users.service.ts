@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../Prisma/prisma.service';
 import { AdminCreateUserDto, AdminUpdateUserDto } from './dto/admin_user_dto';
@@ -56,7 +57,7 @@ export class UsersService {
         isActive: user.isActive,
       };
     } catch (error) {
-      console.error('Error al crear usuario:', error);
+      console.error('Error al crear usuario:', error as Error);
     }
   }
 
@@ -121,7 +122,7 @@ export class UsersService {
         isActive: updateUser.isActive,
       };
     } catch (error) {
-      console.error('Error al actualizar usuario:', error);
+      console.error('Error al actualizar usuario:', error as Error);
     }
   }
 
@@ -140,7 +141,7 @@ export class UsersService {
 
       return users;
     } catch (error) {
-      console.error('Error al obtener usuarios:', error);
+      console.error('Error al obtener usuarios:', error as Error);
     }
   }
 
@@ -165,7 +166,7 @@ export class UsersService {
         isActive: updatedUser.isActive,
       };
     } catch (error) {
-      console.error('Error al eliminar usuario:', error);
+      console.error('Error al eliminar usuario:', error as Error);
     }
   }
 
@@ -193,50 +194,77 @@ export class UsersService {
       );
     }
 
-    const emailOrUsernameExists = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: updateUserDto.email },
-          { username: updateUserDto.username },
-        ],
-        NOT: { id },
-      },
-    });
+    const orConditions: Prisma.UserWhereInput[] = [];
+    if (updateUserDto.email) orConditions.push({ email: updateUserDto.email });
+    if (updateUserDto.username)
+      orConditions.push({ username: updateUserDto.username });
 
-    if (emailOrUsernameExists) {
-      throw new Error(
-        'El email o nombre de usuario ya está en uso por otro usuario',
-      );
+    if (orConditions.length > 0) {
+      const emailOrUsernameExists = await this.prisma.user.findFirst({
+        where: { OR: orConditions, NOT: { id } },
+      });
+
+      if (emailOrUsernameExists) {
+        throw new ConflictException(
+          'El email o nombre de usuario ya está en uso por otro usuario',
+        );
+      }
     }
 
-    let hashPassword: string | undefined;
-    if (updateUserDto.password) {
-      hashPassword = await bycript.hash(updateUserDto.password, 10);
-    }
-
-    //Validar que solo se actualicen los campos proporcionados
     const dataToUpdate: Prisma.UserUpdateInput = {
       ...(updateUserDto.username && { username: updateUserDto.username }),
       ...(updateUserDto.email && { email: updateUserDto.email }),
-      ...(updateUserDto.password && { passwordHash: hashPassword }),
     };
 
-    //Empieza
-    try {
-      const updateUser = await this.prisma.user.update({
-        where: { id },
-        data: dataToUpdate,
-      });
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: dataToUpdate,
+    });
 
-      return {
-        username: updateUser.username,
-        email: updateUser.email,
-        role: updateUser.role,
-        isActive: updateUser.isActive,
-      };
-    } catch (error) {
-      console.error('Error al actualizar usuario:', error);
+    return {
+      username: updatedUser.username,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      isActive: updatedUser.isActive,
+    };
+  }
+
+  // Cambiar la contraseña propia (requiere la contraseña actual)
+  async updateMyPassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ success: boolean }> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+
+    const isCurrentPasswordValid = await bycript.compare(
+      currentPassword,
+      user.passwordHash,
+    );
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('La contraseña actual no es correcta');
     }
+
+    const newPasswordHash = await bycript.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash },
+    });
+
+    return { success: true };
+  }
+
+  // Desactivar la cuenta propia (self-service, mismo patrón que deleteUser del admin)
+  async deactivateMyAccount(
+    userId: number,
+  ): Promise<{ username: string; isActive: boolean }> {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+    });
+    return { username: updated.username, isActive: updated.isActive };
   }
 
   // Obtener perfil por ID (usuario autenticado)
@@ -253,7 +281,7 @@ export class UsersService {
         isActive: user.isActive,
       };
     } catch (error) {
-      console.error('Error al obtener usuario por ID:', error);
+      console.error('Error al obtener usuario por ID:', error as Error);
     }
   }
 
@@ -275,14 +303,12 @@ export class UsersService {
 
       return user;
     } catch (error) {
-      console.error('Error al obtener perfil:', error);
+      console.error('Error al obtener perfil:', error as Error);
     }
   }
 
   // Estadísticas del usuario por dificultad
-  async getMyStats(
-    userId: number,
-  ): Promise<
+  async getMyStats(userId: number): Promise<
     Array<{
       difficultyId: number;
       difficultyName: string;
@@ -319,7 +345,9 @@ export class UsersService {
       select: { defaultDifficultyId: true },
     });
 
-    return { defaultDifficultyId: user.defaultDifficultyId };
+    return {
+      defaultDifficultyId: user.defaultDifficultyId as number | null,
+    };
   }
 
   async updateMyPreferences(
@@ -341,6 +369,8 @@ export class UsersService {
       select: { defaultDifficultyId: true },
     });
 
-    return { defaultDifficultyId: updated.defaultDifficultyId };
+    return {
+      defaultDifficultyId: updated.defaultDifficultyId as number | null,
+    };
   }
 }

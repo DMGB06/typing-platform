@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { PrismaService } from '../../Prisma/prisma.service';
+import * as bycript from 'bcrypt';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -148,6 +153,150 @@ describe('UsersService', () => {
         select: { defaultDifficultyId: true },
       });
       expect(result).toEqual({ defaultDifficultyId: 2 });
+    });
+  });
+
+  describe('updateUser', () => {
+    const currentUser = {
+      id: 1,
+      email: 'ana@test.com',
+      username: 'ana',
+      role: 'USER',
+    } as const;
+
+    it('updates only the username without a false duplicate conflict when email is not provided', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: 1 });
+      mockPrismaService.user.findFirst.mockResolvedValue(null);
+      mockPrismaService.user.update.mockResolvedValue({
+        username: 'nuevo_nombre',
+        email: 'ana@test.com',
+        role: 'USER',
+        isActive: true,
+      });
+
+      const result = await service.updateUser(1, currentUser, {
+        username: 'nuevo_nombre',
+      });
+
+      expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
+        where: { OR: [{ username: 'nuevo_nombre' }], NOT: { id: 1 } },
+      });
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { username: 'nuevo_nombre' },
+      });
+      expect(result).toEqual({
+        username: 'nuevo_nombre',
+        email: 'ana@test.com',
+        role: 'USER',
+        isActive: true,
+      });
+    });
+
+    it('updates only the email without a false duplicate conflict when username is not provided', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: 1 });
+      mockPrismaService.user.findFirst.mockResolvedValue(null);
+      mockPrismaService.user.update.mockResolvedValue({
+        username: 'ana',
+        email: 'nuevo@test.com',
+        role: 'USER',
+        isActive: true,
+      });
+
+      await service.updateUser(1, currentUser, { email: 'nuevo@test.com' });
+
+      expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
+        where: { OR: [{ email: 'nuevo@test.com' }], NOT: { id: 1 } },
+      });
+    });
+
+    it('throws ConflictException when the username is already taken by another user', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: 1 });
+      mockPrismaService.user.findFirst.mockResolvedValue({
+        id: 2,
+        username: 'tomado',
+      });
+
+      await expect(
+        service.updateUser(1, currentUser, { username: 'tomado' }),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPrismaService.user.update).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when the user does not exist', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateUser(1, currentUser, { username: 'nuevo_nombre' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ForbiddenException when currentUser.id does not match the target id', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: 5 });
+
+      await expect(
+        service.updateUser(5, currentUser, { username: 'nuevo_nombre' }),
+      ).rejects.toThrow('No tienes permiso para actualizar este usuario');
+    });
+  });
+
+  describe('updateMyPassword', () => {
+    it('rejects with the wrong current password and writes nothing', async () => {
+      mockPrismaService.user.findUniqueOrThrow.mockResolvedValue({
+        id: 1,
+        passwordHash: await bycript.hash('correcta123', 10),
+      });
+
+      await expect(
+        service.updateMyPassword(1, 'incorrecta', 'nueva123'),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(mockPrismaService.user.update).not.toHaveBeenCalled();
+    });
+
+    it('hashes and saves the new password when the current one is correct', async () => {
+      const currentHash = await bycript.hash('correcta123', 10);
+      mockPrismaService.user.findUniqueOrThrow.mockResolvedValue({
+        id: 1,
+        passwordHash: currentHash,
+      });
+      mockPrismaService.user.update.mockResolvedValue({ id: 1 });
+
+      const result = await service.updateMyPassword(
+        1,
+        'correcta123',
+        'nueva123',
+      );
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledTimes(1);
+      const updateCall = (
+        mockPrismaService.user.update.mock.calls as unknown[][]
+      )[0]?.[0] as {
+        where: { id: number };
+        data: { passwordHash: string };
+      };
+      expect(updateCall.where).toEqual({ id: 1 });
+      expect(updateCall.data.passwordHash).not.toBe(currentHash);
+      expect(
+        await bycript.compare('nueva123', updateCall.data.passwordHash),
+      ).toBe(true);
+      expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('deactivateMyAccount', () => {
+    it('sets isActive to false for the given user id only', async () => {
+      mockPrismaService.user.update.mockResolvedValue({
+        username: 'ana',
+        isActive: false,
+      });
+
+      const result = await service.deactivateMyAccount(1);
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { isActive: false },
+      });
+      expect(result).toEqual({ username: 'ana', isActive: false });
     });
   });
 });

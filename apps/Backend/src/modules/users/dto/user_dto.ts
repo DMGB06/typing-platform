@@ -13,16 +13,10 @@ export class UpdateUserDto {
   @IsNotEmpty()
   @MinLength(3)
   @MaxLength(20)
-  username!: string;
+  username?: string;
 
   @IsOptional()
   @IsEmail()
   @IsNotEmpty()
-  email!: string;
-
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password!: string;
+  email?: string;
 }
