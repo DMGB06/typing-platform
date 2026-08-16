@@ -35,6 +35,9 @@
 
   --color-hover: #e0e0e0;
   --color-disabled: #c4c4c4;
+
+  --color-accent: #8a6a00;
+  --color-active: #8a6a00;
 }
 
 /* Estilos base */

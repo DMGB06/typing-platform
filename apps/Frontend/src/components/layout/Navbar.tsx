@@ -36,8 +36,8 @@ export const Navbar: React.FC = () => {
                                 style={{ color: 'var(--color-accent)' }} />
 
                             <span
-                                className="text-lg sm:text-3xl font-normal tracking-tight text-[#c6c5bb]"
-
+                                className="text-lg sm:text-3xl font-normal tracking-tight"
+                                style={{ color: 'var(--color-text-primary)' }}
                             >
                                 typingpro
                             </span>
