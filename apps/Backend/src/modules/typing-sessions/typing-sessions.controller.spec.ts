@@ -4,6 +4,7 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { TypingSessionsService } from './typing-sessions.service';
 import { PrismaService } from '../../Prisma/prisma.service';
 import { CreateTypingSessionDto } from './dto/typing.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,10 @@ const prismaMock = {
   },
 };
 
+const mockNotificationsService = {
+  createPersonalBestNotification: jest.fn(),
+};
+
 // ─── Suite ───────────────────────────────────────────────────────────────────
 
 describe('TypingSessionsService', () => {
@@ -72,6 +77,7 @@ describe('TypingSessionsService', () => {
       providers: [
         TypingSessionsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
 

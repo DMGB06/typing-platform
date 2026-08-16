@@ -6,10 +6,14 @@ import {
 import { PrismaService } from '../../Prisma/prisma.service';
 import { TypingSession } from '@prisma/client';
 import { CreateTypingSessionDto } from './dto/typing.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TypingSessionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   // ============================================================
   // PÚBLICOS
@@ -168,18 +172,34 @@ export class TypingSessionsService {
         ? (existing.avgErrorRate * n + dto.errorRate) / newCount
         : existing.avgErrorRate;
 
+    const isNewPersonalBest = !!(dto.wpm && dto.wpm > existing.bestWpm);
+
     await this.prisma.userStatsByDifficulty.update({
       where: { userId_difficultyId: { userId, difficultyId } },
       data: {
         totalSessions: { increment: 1 },
         totalTimeSeconds: { increment: dto.timeSeconds ?? 0 },
-        bestWpm:
-          dto.wpm && dto.wpm > existing.bestWpm ? dto.wpm : existing.bestWpm,
+        bestWpm: isNewPersonalBest ? dto.wpm! : existing.bestWpm,
         avgWpm: newAvgWpm,
         avgAccuracy: newAvgAccuracy,
         avgErrorRate: newAvgErrorRate,
       },
     });
+
+    if (isNewPersonalBest) {
+      try {
+        await this.notificationsService.createPersonalBestNotification(
+          userId,
+          difficultyId,
+          dto.wpm!,
+        );
+      } catch (err) {
+        console.error(
+          'No se pudo crear la notificación de récord personal:',
+          err,
+        );
+      }
+    }
   }
 
   /** Actualiza el historial de textos practicados por el usuario */

@@ -5,6 +5,7 @@ import { TypingSessionsService } from './typing-sessions.service';
 import { PrismaService } from '../../Prisma/prisma.service';
 import { CreateTypingSessionDto } from './dto/typing.dto';
 import { TypingSession } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -63,6 +64,10 @@ const prismaMock = {
   },
 };
 
+const mockNotificationsService = {
+  createPersonalBestNotification: jest.fn(),
+};
+
 // ─── Suite ───────────────────────────────────────────────────────────────────
 
 describe('TypingSessionsService', () => {
@@ -73,6 +78,7 @@ describe('TypingSessionsService', () => {
       providers: [
         TypingSessionsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
 
@@ -165,6 +171,66 @@ describe('TypingSessionsService', () => {
       await service.create(1, dto);
       expect(prismaMock.userStatsByDifficulty.update).toHaveBeenCalled();
       expect(prismaMock.userStatsByDifficulty.create).not.toHaveBeenCalled();
+    });
+
+    it('crea una notificación de récord personal cuando el wpm supera el bestWpm anterior', async () => {
+      prismaMock.userStatsByDifficulty.findUnique.mockResolvedValue({
+        totalSessions: 4,
+        bestWpm: 70,
+        avgWpm: 60,
+        avgAccuracy: 90,
+        avgErrorRate: 6,
+      });
+      prismaMock.userStatsByDifficulty.update.mockResolvedValue({});
+
+      await service.create(1, dto); // dto.wpm = 80 > 70
+
+      expect(
+        mockNotificationsService.createPersonalBestNotification,
+      ).toHaveBeenCalledWith(1, mockText.difficultyId, 80);
+    });
+
+    it('no crea notificación cuando el wpm no supera el bestWpm anterior', async () => {
+      prismaMock.userStatsByDifficulty.findUnique.mockResolvedValue({
+        totalSessions: 4,
+        bestWpm: 90,
+        avgWpm: 60,
+        avgAccuracy: 90,
+        avgErrorRate: 6,
+      });
+      prismaMock.userStatsByDifficulty.update.mockResolvedValue({});
+
+      await service.create(1, dto); // dto.wpm = 80 < 90
+
+      expect(
+        mockNotificationsService.createPersonalBestNotification,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('no crea notificación en la primera sesión del usuario en esa dificultad', async () => {
+      await service.create(1, dto); // findUnique ya resuelve null por el beforeEach de create()
+
+      expect(
+        mockNotificationsService.createPersonalBestNotification,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('un error al crear la notificación no hace fallar la creación de la sesión', async () => {
+      prismaMock.userStatsByDifficulty.findUnique.mockResolvedValue({
+        totalSessions: 4,
+        bestWpm: 70,
+        avgWpm: 60,
+        avgAccuracy: 90,
+        avgErrorRate: 6,
+      });
+      prismaMock.userStatsByDifficulty.update.mockResolvedValue({});
+      mockNotificationsService.createPersonalBestNotification.mockRejectedValue(
+        new Error('DB down'),
+      );
+
+      const result = await service.create(1, dto);
+
+      expect(result).toEqual(mockSession);
     });
 
     it('crea historial nuevo si el usuario no tiene historial en ese texto', async () => {

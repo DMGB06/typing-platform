@@ -10,6 +10,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { TextModule } from './modules/text/text.module';
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { TypingSessionsModule } from './modules/typing-sessions/typing-sessions.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     TextModule,
     LeaderboardModule,
     NotificationsModule,
+    TypingSessionsModule,
   ],
   controllers: [AppController],
   providers: [
