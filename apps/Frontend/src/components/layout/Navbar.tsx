@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { GiKeyboard } from "react-icons/gi";
+import { FiSun, FiMoon } from "react-icons/fi";
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 /**
@@ -16,6 +18,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
  */
 export const Navbar: React.FC = () => {
     const { isLoggedIn, ready, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     return (
@@ -89,6 +92,21 @@ export const Navbar: React.FC = () => {
 
                     {/* Acciones de Usuario */}
                     <div className="flex items-center gap-3 md:gap-4">
+                        {/* Toggle de tema claro/oscuro - siempre visible */}
+                        <button
+                            onClick={toggleTheme}
+                            className="flex items-center justify-center w-10 h-10 rounded transition-colors duration-200 hover:bg-[var(--color-hover)]"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                            aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                            title={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                        >
+                            {theme === 'dark' ? (
+                                <FiSun className="w-6 h-6" />
+                            ) : (
+                                <FiMoon className="w-6 h-6" />
+                            )}
+                        </button>
+
                         {/* Notificaciones - oculto en móvil pequeño */}
                         <Link
                             href="/notifications"
