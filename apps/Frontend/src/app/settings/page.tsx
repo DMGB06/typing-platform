@@ -1,15 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import { useCatalogs } from '@/hooks/useCatalogs';
-import { getMyPreferences, updateMyPreferences } from '@/lib/api/users';
+import { getMyPreferences, updateMyPreferences, updateMyAccount, updateMyPassword, deactivateMyAccount } from '@/lib/api/users';
+import { ApiError } from '@/lib/api/client';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+
+const inputClassName =
+  'flex-1 rounded-lg border px-3 py-[7px] text-[13px] focus:outline-none focus:ring-2 focus:ring-offset-0 border-bg-tertiary focus:ring-text-tertiary/20 focus:border-text-secondary/40 disabled:opacity-50 disabled:cursor-not-allowed';
+const inputStyle = { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' };
+const saveButtonClassName =
+  'px-4 py-1.5 text-[13px] font-medium rounded-md transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60';
+const saveButtonStyle = { backgroundColor: 'var(--color-accent)', color: 'var(--color-bg-primary)' };
 
 export default function SettingsPage() {
-  const { ready, isLoggedIn } = useAuth();
+  const { ready, isLoggedIn, logout } = useAuth();
   const router = useRouter();
   const { catalogs, loading: loadingCatalogs, error: catalogsError } = useCatalogs();
 
@@ -17,6 +26,22 @@ export default function SettingsPage() {
   const [loadingPreferences, setLoadingPreferences] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [savingAccount, setSavingAccount] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [accountSuccess, setAccountSuccess] = useState<string | null>(null);
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+  const [deactivateError, setDeactivateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -54,6 +79,66 @@ export default function SettingsPage() {
       setError('No se pudo guardar tu preferencia.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleUpdateAccount = async (e: FormEvent) => {
+    e.preventDefault();
+    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedUsername && !trimmedEmail) {
+      setAccountError('Ingresá al menos un campo para actualizar.');
+      return;
+    }
+
+    setSavingAccount(true);
+    setAccountError(null);
+    setAccountSuccess(null);
+    try {
+      await updateMyAccount({
+        ...(trimmedUsername && { username: trimmedUsername }),
+        ...(trimmedEmail && { email: trimmedEmail }),
+      });
+      setAccountSuccess('Datos actualizados correctamente.');
+      setUsername('');
+      setEmail('');
+    } catch (err) {
+      console.error('Error al actualizar la cuenta:', err);
+      setAccountError(err instanceof ApiError ? err.message : 'No se pudieron actualizar los datos.');
+    } finally {
+      setSavingAccount(false);
+    }
+  };
+
+  const handleChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setSavingPassword(true);
+    setPasswordError(null);
+    setPasswordSuccess(null);
+    try {
+      await updateMyPassword(currentPassword, newPassword);
+      setPasswordSuccess('Contraseña actualizada correctamente.');
+      setCurrentPassword('');
+      setNewPassword('');
+    } catch (err) {
+      console.error('Error al cambiar la contraseña:', err);
+      setPasswordError(err instanceof ApiError ? err.message : 'No se pudo cambiar la contraseña.');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    setDeactivating(true);
+    setDeactivateError(null);
+    try {
+      await deactivateMyAccount();
+      await logout();
+    } catch (err) {
+      console.error('Error al eliminar la cuenta:', err);
+      setDeactivateError(err instanceof ApiError ? err.message : 'No se pudo eliminar la cuenta.');
+      setDeactivating(false);
     }
   };
 
@@ -130,9 +215,114 @@ export default function SettingsPage() {
                 ))}
               </div>
             )}
+
+            <div className="border-t pt-8 space-y-6" style={{ borderColor: 'var(--color-bg-tertiary)' }}>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                Cuenta
+              </h2>
+
+              <form onSubmit={handleUpdateAccount} className="space-y-3">
+                <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+                  Cambiar nombre de usuario o email. Dejá en blanco lo que no quieras cambiar.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Nuevo nombre de usuario"
+                    disabled={savingAccount}
+                    className={inputClassName}
+                    style={inputStyle}
+                  />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Nuevo email"
+                    disabled={savingAccount}
+                    className={inputClassName}
+                    style={inputStyle}
+                  />
+                  <button type="submit" disabled={savingAccount} className={saveButtonClassName} style={saveButtonStyle}>
+                    Guardar
+                  </button>
+                </div>
+                {accountError && (
+                  <p className="text-sm" style={{ color: 'var(--color-error)' }}>{accountError}</p>
+                )}
+                {accountSuccess && (
+                  <p className="text-sm" style={{ color: 'var(--color-success)' }}>{accountSuccess}</p>
+                )}
+              </form>
+
+              <form onSubmit={handleChangePassword} className="space-y-3">
+                <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+                  Cambiar contraseña.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Contraseña actual"
+                    disabled={savingPassword}
+                    className={inputClassName}
+                    style={inputStyle}
+                  />
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Contraseña nueva"
+                    disabled={savingPassword}
+                    className={inputClassName}
+                    style={inputStyle}
+                  />
+                  <button type="submit" disabled={savingPassword} className={saveButtonClassName} style={saveButtonStyle}>
+                    Cambiar contraseña
+                  </button>
+                </div>
+                {passwordError && (
+                  <p className="text-sm" style={{ color: 'var(--color-error)' }}>{passwordError}</p>
+                )}
+                {passwordSuccess && (
+                  <p className="text-sm" style={{ color: 'var(--color-success)' }}>{passwordSuccess}</p>
+                )}
+              </form>
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={deactivating}
+                  className="px-4 py-1.5 text-[13px] font-medium rounded-md transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    backgroundColor: 'var(--color-bg-secondary)',
+                    color: 'var(--color-error)',
+                    border: '1px solid var(--color-error)',
+                  }}
+                >
+                  Eliminar cuenta
+                </button>
+                {deactivateError && (
+                  <p className="text-sm" style={{ color: 'var(--color-error)' }}>{deactivateError}</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        title="¿Eliminar tu cuenta?"
+        description="Esta acción desactiva tu cuenta de forma permanente: no vas a poder volver a iniciar sesión con ella. Se cerrará tu sesión inmediatamente."
+        confirmLabel="Eliminar cuenta"
+        cancelLabel="Cancelar"
+        onConfirm={() => { setShowDeleteModal(false); void handleDeactivate(); }}
+        onCancel={() => setShowDeleteModal(false)}
+      />
 
       <Footer />
     </div>
