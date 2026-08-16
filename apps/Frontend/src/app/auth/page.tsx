@@ -32,8 +32,11 @@ export default function AuthPage() {
           <div className="text-center mb-5 sm:mb-7 pb-3">
             <div className="flex items-center justify-center gap-2.5 mb-2">
               <GiKeyboard className="text-2xl sm:text-3xl" style={{ color: 'var(--color-text-secondary)' }} />
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ color: 'var(--color-text-primary)' }}>
-                typingpro
+              <h1
+                className="text-xl sm:text-2xl font-bold tracking-tight"
+                style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-mono)' }}
+              >
+                typingpro<span className="char-current" aria-hidden="true">&nbsp;</span>
               </h1>
             </div>
             <p className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
