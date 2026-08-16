@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FiBarChart2 } from 'react-icons/fi';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,7 +55,22 @@ export default function ProfilePage() {
 
       <main className="flex-1 py-12">
         {ready && isLoggedIn && (
-          <>
+          <div className="max-w-3xl mx-auto space-y-8">
+            <div className="text-center space-y-2">
+              <h1
+                className="text-xl font-semibold"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
+                Mi perfil
+              </h1>
+              <p
+                className="text-sm"
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                Tus estadísticas y sesiones de práctica.
+              </p>
+            </div>
+
             {loading && (
               <p
                 className="text-center text-sm"
@@ -82,20 +98,7 @@ export default function ProfilePage() {
                     backgroundColor: 'var(--color-bg-secondary)',
                   }}
                 >
-                  <svg
-                    className="w-8 h-8"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    style={{ color: 'var(--color-text-tertiary)' }}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
+                  <FiBarChart2 className="w-8 h-8" style={{ color: 'var(--color-text-tertiary)' }} />
                 </div>
                 <h1
                   className="text-xl font-semibold"
@@ -124,7 +127,7 @@ export default function ProfilePage() {
             )}
 
             {!loading && !error && stats.length > 0 && (
-              <div className="max-w-3xl mx-auto space-y-12">
+              <div className="space-y-12">
                 <section>
                   <h2
                     className="text-lg font-semibold mb-4"
@@ -230,7 +233,7 @@ export default function ProfilePage() {
                 </section>
               </div>
             )}
-          </>
+          </div>
         )}
       </main>
 

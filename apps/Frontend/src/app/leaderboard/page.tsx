@@ -1,11 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { FiAward } from 'react-icons/fi';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useCatalogs } from '@/hooks/useCatalogs';
 import { getLeaderboard } from '@/lib/api/leaderboard';
 import type { LeaderboardEntry } from '@/types';
+
+// Colores de podio para los primeros 3 puestos (index 0-2); el resto usa el
+// número plano existente. El 1er puesto reutiliza --color-accent, que ya es
+// dorado en esta paleta.
+const RANK_COLORS = ['var(--color-accent)', 'var(--color-rank-silver)', 'var(--color-rank-bronze)'];
 
 export default function LeaderboardPage() {
   const { catalogs, loading: loadingCatalogs, error: catalogsError } = useCatalogs();
@@ -132,20 +138,7 @@ export default function LeaderboardPage() {
                   backgroundColor: 'var(--color-bg-secondary)',
                 }}
               >
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  style={{ color: 'var(--color-text-tertiary)' }}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.853m0 0a6.023 6.023 0 01-2.77-.853"
-                  />
-                </svg>
+                <FiAward className="w-8 h-8" style={{ color: 'var(--color-text-tertiary)' }} />
               </div>
               <h2
                 className="text-lg font-semibold"
@@ -164,12 +157,21 @@ export default function LeaderboardPage() {
                   className="flex items-center gap-4 rounded-lg px-4 py-3 text-sm"
                   style={{ backgroundColor: 'var(--color-bg-secondary)' }}
                 >
-                  <span
-                    className="w-6 text-center font-semibold"
-                    style={{ color: 'var(--color-text-tertiary)' }}
-                  >
-                    {index + 1}
-                  </span>
+                  {RANK_COLORS[index] ? (
+                    <span
+                      className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0"
+                      style={{ backgroundColor: RANK_COLORS[index], color: 'var(--color-bg-primary)' }}
+                    >
+                      {index + 1}
+                    </span>
+                  ) : (
+                    <span
+                      className="w-6 text-center font-semibold shrink-0"
+                      style={{ color: 'var(--color-text-tertiary)' }}
+                    >
+                      {index + 1}
+                    </span>
+                  )}
                   <span
                     className="flex-1 font-medium"
                     style={{ color: 'var(--color-text-primary)' }}
