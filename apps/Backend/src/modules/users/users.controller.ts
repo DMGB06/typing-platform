@@ -12,6 +12,7 @@ import { UsersService } from './users.service';
 import { AdminGuard } from '../../common/decorators/guards/admin.guard';
 import { JwtAuthGuard } from '../auth/guards/wt-auth.guard';
 import { UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AdminCreateUserDto, AdminUpdateUserDto } from './dto/admin_user_dto';
 import { UpdateUserDto } from './dto/user_dto';
 import { UpdateMyPasswordDto } from './dto/update_password_dto';
@@ -148,6 +149,7 @@ export class UsersController {
 
   // Cambiar la contraseña propia (requiere la contraseña actual)
   @Put('me/password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(JwtAuthGuard) // Solo usuarios autenticados
   async updateMyPassword(
     @Body() updatePasswordDto: UpdateMyPasswordDto,

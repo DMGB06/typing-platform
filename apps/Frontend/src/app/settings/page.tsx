@@ -35,6 +35,7 @@ export default function SettingsPage() {
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
@@ -113,14 +114,29 @@ export default function SettingsPage() {
 
   const handleChangePassword = async (e: FormEvent) => {
     e.preventDefault();
-    setSavingPassword(true);
     setPasswordError(null);
     setPasswordSuccess(null);
+
+    if (!currentPassword || !newPassword) {
+      setPasswordError('Completá ambos campos de contraseña.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('La contraseña nueva debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError('Las contraseñas nuevas no coinciden.');
+      return;
+    }
+
+    setSavingPassword(true);
     try {
       await updateMyPassword(currentPassword, newPassword);
       setPasswordSuccess('Contraseña actualizada correctamente.');
       setCurrentPassword('');
       setNewPassword('');
+      setConfirmNewPassword('');
     } catch (err) {
       console.error('Error al cambiar la contraseña:', err);
       setPasswordError(err instanceof ApiError ? err.message : 'No se pudo cambiar la contraseña.');
@@ -275,6 +291,15 @@ export default function SettingsPage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Contraseña nueva"
+                    disabled={savingPassword}
+                    className={inputClassName}
+                    style={inputStyle}
+                  />
+                  <input
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="Confirmar contraseña nueva"
                     disabled={savingPassword}
                     className={inputClassName}
                     style={inputStyle}

@@ -110,7 +110,9 @@ export async function apiClient<T>(
     // sesión válida que ya estuviera guardada (ej. un usuario logueado que
     // vuelve a /auth y tipea mal la contraseña de otra cuenta).
     const isCredentialsAttempt =
-      endpoint === "/auth/login" || endpoint === "/auth/register";
+      endpoint === "/auth/login" ||
+      endpoint === "/auth/register" ||
+      endpoint === "/users/me/password";
 
     if (response.status === 401 && !isCredentialsAttempt) {
       // Sesión vencida o inválida: limpiamos el store compartido para que
