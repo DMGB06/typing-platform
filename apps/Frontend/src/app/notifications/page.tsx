@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiAward, FiBell } from 'react-icons/fi';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useAuth } from '@/hooks/useAuth';
@@ -91,12 +92,23 @@ export default function NotificationsPage() {
             )}
 
             {!loading && !error && notifications.length === 0 && (
-              <p
-                className="text-center text-sm"
-                style={{ color: 'var(--color-text-tertiary)' }}
-              >
-                Todavía no tenés notificaciones.
-              </p>
+              <div className="text-center space-y-4">
+                <div
+                  className="flex items-center justify-center w-16 h-16 rounded-2xl mx-auto border"
+                  style={{
+                    borderColor: 'var(--color-bg-tertiary)',
+                    backgroundColor: 'var(--color-bg-secondary)',
+                  }}
+                >
+                  <FiBell className="w-8 h-8" style={{ color: 'var(--color-text-tertiary)' }} />
+                </div>
+                <p
+                  className="text-sm"
+                  style={{ color: 'var(--color-text-tertiary)' }}
+                >
+                  Todavía no tenés notificaciones.
+                </p>
+              </div>
             )}
 
             {!loading && !error && notifications.length > 0 && (
@@ -104,14 +116,20 @@ export default function NotificationsPage() {
                 {notifications.map((n) => (
                   <div
                     key={n.id}
-                    className="rounded-lg p-4 flex items-center justify-between"
+                    className="rounded-lg p-4 flex items-center gap-3"
                     style={{ backgroundColor: 'var(--color-bg-secondary)' }}
                   >
-                    <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                    <div
+                      className="flex items-center justify-center w-8 h-8 rounded-full shrink-0"
+                      style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-bg-primary)' }}
+                    >
+                      <FiAward className="w-4 h-4" />
+                    </div>
+                    <p className="text-sm flex-1" style={{ color: 'var(--color-text-primary)' }}>
                       Nuevo récord: {n.wpm} WPM en {n.difficultyName}
                     </p>
                     <span
-                      className="text-xs shrink-0 ml-4"
+                      className="text-xs shrink-0"
                       style={{ color: 'var(--color-text-tertiary)' }}
                     >
                       {formatRelativeTime(n.createdAt)}

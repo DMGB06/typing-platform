@@ -2,17 +2,17 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiUser, FiMail, FiLock } from 'react-icons/fi';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { AuthInput } from '@/components/auth/AuthInput';
 import { useAuth } from '@/hooks/useAuth';
 import { useCatalogs } from '@/hooks/useCatalogs';
 import { getMyPreferences, updateMyPreferences, updateMyAccount, updateMyPassword, deactivateMyAccount } from '@/lib/api/users';
 import { ApiError } from '@/lib/api/client';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
-const inputClassName =
-  'flex-1 rounded-lg border px-3 py-[7px] text-[13px] focus:outline-none focus:ring-2 focus:ring-offset-0 border-bg-tertiary focus:ring-text-tertiary/20 focus:border-text-secondary/40 disabled:opacity-50 disabled:cursor-not-allowed';
-const inputStyle = { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' };
+const noopBlur = () => {};
 const saveButtonClassName =
   'px-4 py-1.5 text-[13px] font-medium rounded-md transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60';
 const saveButtonStyle = { backgroundColor: 'var(--color-accent)', color: 'var(--color-bg-primary)' };
@@ -241,29 +241,31 @@ export default function SettingsPage() {
                 <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
                   Cambiar nombre de usuario o email. Dejá en blanco lo que no quieras cambiar.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Nuevo nombre de usuario"
-                    disabled={savingAccount}
-                    className={inputClassName}
-                    style={inputStyle}
-                  />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Nuevo email"
-                    disabled={savingAccount}
-                    className={inputClassName}
-                    style={inputStyle}
-                  />
-                  <button type="submit" disabled={savingAccount} className={saveButtonClassName} style={saveButtonStyle}>
-                    Guardar
-                  </button>
-                </div>
+                <AuthInput
+                  name="settings-username"
+                  label="Nuevo nombre de usuario"
+                  type="text"
+                  placeholder="ej. john_doe"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onBlur={noopBlur}
+                  disabled={savingAccount}
+                  icon={<FiUser className="w-4 h-4" />}
+                />
+                <AuthInput
+                  name="settings-email"
+                  label="Nuevo email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={noopBlur}
+                  disabled={savingAccount}
+                  icon={<FiMail className="w-4 h-4" />}
+                />
+                <button type="submit" disabled={savingAccount} className={saveButtonClassName} style={saveButtonStyle}>
+                  Guardar
+                </button>
                 {accountError && (
                   <p className="text-sm" style={{ color: 'var(--color-error)' }}>{accountError}</p>
                 )}
@@ -276,38 +278,45 @@ export default function SettingsPage() {
                 <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
                   Cambiar contraseña.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Contraseña actual"
-                    disabled={savingPassword}
-                    className={inputClassName}
-                    style={inputStyle}
-                  />
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Contraseña nueva"
-                    disabled={savingPassword}
-                    className={inputClassName}
-                    style={inputStyle}
-                  />
-                  <input
-                    type="password"
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    placeholder="Confirmar contraseña nueva"
-                    disabled={savingPassword}
-                    className={inputClassName}
-                    style={inputStyle}
-                  />
-                  <button type="submit" disabled={savingPassword} className={saveButtonClassName} style={saveButtonStyle}>
-                    Cambiar contraseña
-                  </button>
-                </div>
+                <AuthInput
+                  name="settings-current-password"
+                  label="Contraseña actual"
+                  type="password"
+                  placeholder="••••••••"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  onBlur={noopBlur}
+                  disabled={savingPassword}
+                  autoComplete="current-password"
+                  icon={<FiLock className="w-4 h-4" />}
+                />
+                <AuthInput
+                  name="settings-new-password"
+                  label="Contraseña nueva"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  onBlur={noopBlur}
+                  disabled={savingPassword}
+                  autoComplete="new-password"
+                  icon={<FiLock className="w-4 h-4" />}
+                />
+                <AuthInput
+                  name="settings-confirm-new-password"
+                  label="Confirmar contraseña nueva"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  onBlur={noopBlur}
+                  disabled={savingPassword}
+                  autoComplete="new-password"
+                  icon={<FiLock className="w-4 h-4" />}
+                />
+                <button type="submit" disabled={savingPassword} className={saveButtonClassName} style={saveButtonStyle}>
+                  Cambiar contraseña
+                </button>
                 {passwordError && (
                   <p className="text-sm" style={{ color: 'var(--color-error)' }}>{passwordError}</p>
                 )}
