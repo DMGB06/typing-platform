@@ -49,12 +49,10 @@ const fieldIcons: Record<string, React.ReactNode> = {
 
 interface LoginFormProps {
   onSuccess?: () => void;
-  onForgotPassword?: () => void;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   onSuccess,
-  onForgotPassword,
 }) => {
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -144,9 +142,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           />
         ))}
 
-        {/* Remember me + Forgot password */}
-        <div className="flex items-center justify-between pt-2 pb-2">
-          {/* Checkbox */}
+        {/* Remember me */}
+        <div className="flex items-center pt-2 pb-2">
           <label className="flex items-center gap-2 cursor-pointer select-none group">
             <button
               type="button"
@@ -173,18 +170,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               Recordarme
             </span>
           </label>
-
-          {/* Forgot password */}
-          <button
-            type="button"
-            onClick={onForgotPassword}
-            className="text-xs transition-colors duration-200 hover:underline focus:outline-none"
-            style={{ color: 'var(--color-text-tertiary)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-tertiary)')}
-          >
-            ¿Olvidaste tu contraseña?
-          </button>
         </div>
 
         {/* Submit */}

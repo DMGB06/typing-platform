@@ -21,11 +21,6 @@ export default function AuthPage() {
     router.push('/');
   };
 
-  const handleForgotPassword = () => {
-    // Placeholder para futura implementación
-    alert('Funcionalidad próximamente disponible');
-  };
-
   return (
     <div className="min-h-screen flex flex-col px-2 lg:px-24" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Navbar />
@@ -136,10 +131,7 @@ export default function AuthPage() {
                   borderColor: 'var(--color-bg-tertiary)',
                 }}
               >
-                <LoginForm
-                  onSuccess={handleSuccess}
-                  onForgotPassword={handleForgotPassword}
-                />
+                <LoginForm onSuccess={handleSuccess} />
 
                 {/* Extra space filler + decorative element for Login (shorter form) */}
                 <div className="flex-1 flex flex-col justify-end mt-6">
