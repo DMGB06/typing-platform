@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { FiAlignLeft, FiCode, FiMessageSquare, FiFileText, FiBookOpen } from 'react-icons/fi';
+import type { IconType } from 'react-icons';
 import type { TextFiltersProps } from '@/types';
 
 /** Label de grupo de filtros */
@@ -88,11 +90,11 @@ export const TextFilters: React.FC<TextFiltersProps> = ({
   );
 
   // Iconos por nombre de tipo de texto
-  const typeIcons: Record<string, string> = {
-    'Párrafo': '¶  ',
-    'Código': '⟨/⟩  ',
-    'Cita': '❝  ',
-    'Artículo': '§  ',
+  const typeIcons: Record<string, IconType> = {
+    'Párrafo': FiAlignLeft,
+    'Código': FiCode,
+    'Cita': FiMessageSquare,
+    'Artículo': FiFileText,
   };
 
   const selectedLang = catalogs.languages.find((l) => l.id === filters.languageId);
@@ -133,19 +135,20 @@ export const TextFilters: React.FC<TextFiltersProps> = ({
           <div className="flex flex-col items-center gap-1.5">
             <GroupLabel>Tipo</GroupLabel>
             <div className="flex items-center gap-0.5 flex-wrap justify-center">
-              {catalogs.textTypes.map((type) => (
-                <FilterChip
-                  key={type.id}
-                  active={filters.typeId === type.id}
-                  onClick={() => onFilterChange({ typeId: type.id })}
-                  tooltip={type.description ?? type.name}
-                >
-                  <span className="mr-1 opacity-60 text-xs">
-                    {typeIcons[type.name] ?? '•'}
-                  </span>
-                  {type.name}
-                </FilterChip>
-              ))}
+              {catalogs.textTypes.map((type) => {
+                const Icon = typeIcons[type.name] ?? FiBookOpen;
+                return (
+                  <FilterChip
+                    key={type.id}
+                    active={filters.typeId === type.id}
+                    onClick={() => onFilterChange({ typeId: type.id })}
+                    tooltip={type.description ?? type.name}
+                  >
+                    <Icon className="inline-block w-3.5 h-3.5 mr-1 -mt-0.5" />
+                    {type.name}
+                  </FilterChip>
+                );
+              })}
             </div>
           </div>
 

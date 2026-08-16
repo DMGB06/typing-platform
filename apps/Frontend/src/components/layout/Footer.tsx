@@ -21,19 +21,19 @@ export const Footer: React.FC = () => {
               <span style={{ color: 'var(--color-text-secondary)' }}>MonkeyType</span>.
             </p>
             <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
-              2026 · Con mucho cariño para la comunidad dev
+              {new Date().getFullYear()} · Con mucho cariño para la comunidad dev
             </p>
           </div>
-    
+
           {/* Iconos + botón GitHub */}
           <div className="flex flex-col items-start md:items-end gap-4">
             <div className="flex items-center gap-7">
 
-              <a href="https://www.instagram.com/denilson_6_gd/" className="transition-opacity duration-200 hover:opacity-70" aria-label="Twitter">
+              <a href="https://www.instagram.com/denilson_6_gd/" target="_blank" rel="noopener noreferrer" className="transition-opacity duration-200 hover:opacity-70" aria-label="Instagram">
                 <FaInstagram className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               </a>
 
-              <a href="https://www.linkedin.com/in/denilson-miguel-godoy-bautista/" className="transition-opacity duration-200 hover:opacity-70" aria-label="Twitter">
+              <a href="https://www.linkedin.com/in/denilson-miguel-godoy-bautista/" target="_blank" rel="noopener noreferrer" className="transition-opacity duration-200 hover:opacity-70" aria-label="LinkedIn">
                 <FaLinkedin className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
               </a>
 

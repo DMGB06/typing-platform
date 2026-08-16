@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { FiRotateCcw } from 'react-icons/fi';
 import type { TypingDisplayProps, Text } from '@/types';
 import { getRandomText } from '@/lib/api/texts';
 import { createTypingSession } from '@/lib/api/typing-sessions';
@@ -276,26 +277,20 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
             )}
 
             {/* Texto */}
-            <div className="text-2xl leading-relaxed font-mono text-center select-none">
+            <div className="typing-text text-center">
               {text.split('').map((char, index) => {
-                let color = 'var(--color-text-tertiary)'; // pendiente
+                let charClass = 'char-pending';
 
                 if (index < userInput.length) {
                   // Ya fue escrito
-                  color = userInput[index] === char
-                    ? 'var(--color-success)'
-                    : 'var(--color-error)';
+                  charClass = userInput[index] === char ? 'char-correct' : 'char-incorrect';
                 } else if (index === currentIndex) {
-                  // Carácter actual
-                  color = 'var(--color-accent)';
+                  // Carácter actual — clase con el pulso animado del cursor
+                  charClass = 'char-current';
                 }
 
                 return (
-                  <span
-                    key={index}
-                    style={{ color }}
-                    className={index === currentIndex ? 'border-b-2' : ''}
-                  >
+                  <span key={index} className={charClass}>
                     {char}
                   </span>
                 );
@@ -307,11 +302,12 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
               <div className="absolute top-4 right-4">
                 <button
                   onClick={handleRestart}
-                  className="text-sm transition-colors duration-200 hover:opacity-70"
+                  className="flex items-center gap-1.5 text-sm transition-colors duration-200 hover:opacity-70"
                   style={{ color: 'var(--color-text-tertiary)' }}
                   title="Restart (Ctrl + R)"
                 >
-                  ↻ restart
+                  <FiRotateCcw className="w-3.5 h-3.5" />
+                  restart
                 </button>
               </div>
             )}
