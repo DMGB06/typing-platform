@@ -265,6 +265,340 @@ async function main() {
       typeId: code.id,
       languageId: english.id,
     },
+
+    // ============================================
+    // PRINCIPIANTE (10 adicionales)
+    // ============================================
+    {
+      title: 'El perro en el parque',
+      content:
+        'Cada mañana, Luca sale a caminar con su perro por el parque cercano. El perro corre feliz detrás de las palomas mientras Luca lo sigue con una sonrisa. Después de un rato, ambos se sientan bajo un árbol a descansar.',
+      difficultyId: beginner.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'La lluvia de otoño',
+      content:
+        'Las hojas caían lentamente mientras la lluvia mojaba las calles vacías. Marta miraba por la ventana con una taza de té caliente entre las manos. El otoño siempre le traía calma y ganas de leer un buen libro.',
+      difficultyId: beginner.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Cita de Helen Keller',
+      content:
+        'El optimismo es la fe que conduce al logro. Nada se puede hacer sin esperanza y confianza. Helen Keller, escritora y activista estadounidense.',
+      difficultyId: beginner.id,
+      typeId: quote.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'El mercado de los sábados',
+      content:
+        'Todos los sábados, la plaza del pueblo se llena de puestos de frutas y verduras frescas. Los vecinos caminan entre los pasillos eligiendo tomates rojos y manzanas dulces. El aroma a pan recién horneado se mezcla con el bullicio de la gente.',
+      difficultyId: beginner.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Cita de Mark Twain',
+      content: 'El secreto para salir adelante es comenzar. Mark Twain, escritor y humorista estadounidense.',
+      difficultyId: beginner.id,
+      typeId: quote.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Un día en la playa',
+      content:
+        'El sol brillaba sobre la arena caliente mientras las olas rompían suavemente en la orilla. Los niños construían castillos de arena y reían sin parar. Al atardecer, el cielo se pintó de naranja y rosa.',
+      difficultyId: beginner.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'La biblioteca del barrio',
+      content:
+        'La biblioteca del barrio abre todos los días a las nueve de la mañana. Ana va allí después de clases para leer cuentos y hacer la tarea en silencio. Le gusta el olor de los libros viejos.',
+      difficultyId: beginner.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Cita de Confucio',
+      content: 'El hombre que mueve una montaña comienza cargando pequeñas piedras. Confucio, filósofo chino.',
+      difficultyId: beginner.id,
+      typeId: quote.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'El jardín de mi abuela',
+      content:
+        'En el jardín de mi abuela crecen rosas rojas y girasoles altos. Ella riega las plantas todas las tardes y canta mientras trabaja. Los pájaros llegan a comer las semillas que ella deja sobre una piedra.',
+      difficultyId: beginner.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'El tren de las siete',
+      content:
+        'Todas las mañanas, Pedro toma el tren de las siete para ir al trabajo. Se sienta cerca de la ventana y observa cómo la ciudad despierta poco a poco. El viaje dura veinte minutos.',
+      difficultyId: beginner.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+
+    // ============================================
+    // INTERMEDIO (10 adicionales)
+    // ============================================
+    {
+      title: 'El auge de las energías renovables',
+      content:
+        'En los últimos años, la energía solar y eólica han dejado de ser alternativas costosas para convertirse en soluciones competitivas frente a los combustibles fósiles. Países como Alemania y China lideran la inversión en paneles solares y turbinas eólicas, reduciendo significativamente sus emisiones de carbono mientras generan empleo en un sector en constante crecimiento.',
+      difficultyId: intermediate.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'La ciencia detrás del sueño',
+      content:
+        'Dormir bien no es un lujo, sino una necesidad biológica esencial para el funcionamiento del cerebro. Durante el sueño profundo, el cerebro consolida recuerdos, elimina toxinas acumuladas y regula el sistema inmunológico. Los expertos recomiendan entre siete y nueve horas de sueño para adultos, evitando pantallas al menos una hora antes de acostarse.',
+      difficultyId: intermediate.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Historia breve del café',
+      content:
+        'El café tiene sus orígenes en Etiopía, donde según la leyenda un pastor descubrió sus efectos al observar a sus cabras comer los frutos de un arbusto. Desde entonces, la bebida se expandió por el mundo árabe, Europa y América, convirtiéndose en una de las bebidas más consumidas del planeta y un motor económico para millones de agricultores.',
+      difficultyId: intermediate.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'El ajedrez como entrenamiento mental',
+      content:
+        'Practicar ajedrez de forma regular mejora la memoria, la concentración y la capacidad de planificación estratégica. Numerosos estudios sugieren que los niños que aprenden ajedrez desde temprana edad desarrollan mejores habilidades matemáticas y de resolución de problemas, además de aprender a manejar la frustración ante la derrota.',
+      difficultyId: intermediate.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Redes sociales y salud mental',
+      content:
+        'El uso excesivo de redes sociales se ha vinculado con mayores niveles de ansiedad y comparación social, especialmente entre adolescentes. Sin embargo, cuando se utilizan de forma consciente, estas plataformas también permiten mantener el contacto con seres queridos y acceder a comunidades de apoyo que antes eran difíciles de encontrar.',
+      difficultyId: intermediate.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'El turismo sostenible',
+      content:
+        'Cada vez más viajeros buscan experiencias que respeten el medio ambiente y las comunidades locales. El turismo sostenible propone reducir la huella ecológica, apoyar la economía local y preservar el patrimonio cultural, transformando la manera en que exploramos el mundo sin agotar sus recursos naturales.',
+      difficultyId: intermediate.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'La robótica en la industria moderna',
+      content:
+        'Los brazos robóticos y los sistemas automatizados han revolucionado las líneas de producción, aumentando la precisión y reduciendo los tiempos de fabricación. Aunque algunos temen la pérdida de empleos, muchos expertos sostienen que la automatización también crea nuevas oportunidades laborales en programación y mantenimiento.',
+      difficultyId: intermediate.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Beneficios de la lectura diaria',
+      content:
+        'Leer al menos veinte minutos al día mejora el vocabulario, reduce el estrés y fortalece la capacidad de concentración. Además, sumergirse en historias ajenas desarrolla la empatía, permitiendo comprender perspectivas y experiencias distintas a las propias.',
+      difficultyId: intermediate.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'El impacto de la música en el cerebro',
+      content:
+        'Escuchar música activa múltiples regiones cerebrales relacionadas con la memoria, las emociones y el movimiento. Estudios recientes demuestran que aprender a tocar un instrumento musical durante la infancia mejora el desarrollo cognitivo y la coordinación motora a largo plazo.',
+      difficultyId: intermediate.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'La importancia de la alimentación balanceada',
+      content:
+        'Una dieta rica en frutas, verduras y proteínas de calidad es fundamental para mantener niveles de energía estables durante el día. Los nutricionistas recomiendan reducir el consumo de azúcares procesados y priorizar alimentos frescos para prevenir enfermedades crónicas a largo plazo.',
+      difficultyId: intermediate.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+
+    // ============================================
+    // AVANZADO (10 adicionales)
+    // ============================================
+    {
+      title: 'Neurociencia de la toma de decisiones',
+      content:
+        'La corteza prefrontal desempeña un papel determinante en los procesos de toma de decisiones, integrando información sensorial, emocional y memoria a largo plazo para evaluar posibles cursos de acción. Investigaciones en neuroeconomía han demostrado que factores como el estrés y la fatiga alteran significativamente la capacidad de ponderar riesgos y beneficios, lo cual explica por qué las decisiones tomadas bajo presión tienden a priorizar recompensas inmediatas sobre beneficios a largo plazo.',
+      difficultyId: advanced.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Función quicksort',
+      content:
+        'function quickSort(arr: number[]): number[] {\n  if (arr.length <= 1) return arr;\n  const pivot = arr[Math.floor(arr.length / 2)];\n  const left = arr.filter((x) => x < pivot);\n  const mid = arr.filter((x) => x === pivot);\n  const right = arr.filter((x) => x > pivot);\n  return [...quickSort(left), ...mid, ...quickSort(right)];\n}',
+      difficultyId: advanced.id,
+      typeId: code.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'El legado del boom latinoamericano',
+      content:
+        'Durante las décadas de 1960 y 1970, un grupo de escritores latinoamericanos revolucionó la literatura mundial con el llamado realismo mágico, una técnica narrativa que entrelaza lo cotidiano con elementos fantásticos como si fueran parte natural de la realidad. Gabriel García Márquez, Julio Cortázar y Mario Vargas Llosa, entre otros, lograron que el continente ocupara un lugar central en el panorama literario internacional.',
+      difficultyId: advanced.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Arquitectura de microservicios',
+      content:
+        'La arquitectura de microservicios propone descomponer una aplicación monolítica en servicios independientes, cada uno responsable de una función específica del negocio y comunicados entre sí mediante APIs. Este enfoque facilita la escalabilidad horizontal y permite que distintos equipos trabajen de forma autónoma, aunque introduce complejidad adicional en la gestión de la comunicación entre servicios y la consistencia de los datos distribuidos.',
+      difficultyId: advanced.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Manejo de promesas asíncronas',
+      content:
+        "async function fetchUserData(id: string): Promise<User> {\n  try {\n    const response = await fetch(`/api/users/${id}`);\n    if (!response.ok) throw new Error('Usuario no encontrado');\n    return await response.json();\n  } catch (error) {\n    console.error('Error al obtener usuario:', error);\n    throw error;\n  }\n}",
+      difficultyId: advanced.id,
+      typeId: code.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Fundamentos de la física cuántica',
+      content:
+        'La mecánica cuántica describe el comportamiento de partículas subatómicas mediante principios que desafían la intuición cotidiana, como la superposición de estados y el entrelazamiento cuántico. Werner Heisenberg formuló el principio de incertidumbre, según el cual resulta imposible conocer simultáneamente con precisión absoluta la posición y el momento de una partícula, estableciendo un límite fundamental para la medición en el universo físico.',
+      difficultyId: advanced.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Geopolítica de los recursos hídricos',
+      content:
+        'El acceso al agua dulce se ha convertido en una fuente creciente de tensión geopolítica entre naciones que comparten cuencas hidrográficas transfronterizas. Ríos como el Nilo, el Éufrates y el Mekong son objeto de disputas diplomáticas donde intervienen factores de seguridad alimentaria, generación energética y crecimiento demográfico, obligando a los estados a negociar tratados complejos de gestión compartida.',
+      difficultyId: advanced.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Biología molecular del envejecimiento',
+      content:
+        'El acortamiento progresivo de los telómeros, estructuras que protegen los extremos de los cromosomas, se asocia directamente con el proceso de envejecimiento celular. Cada división celular reduce ligeramente su longitud hasta que la célula alcanza un estado de senescencia, dejando de dividirse. Comprender este mecanismo ha abierto nuevas líneas de investigación en medicina regenerativa y prevención de enfermedades relacionadas con la edad.',
+      difficultyId: advanced.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'El sistema financiero global',
+      content:
+        'Los mercados financieros internacionales están profundamente interconectados a través de flujos de capital, instrumentos derivados y políticas monetarias coordinadas entre bancos centrales. Una crisis originada en una economía particular puede propagarse rápidamente al resto del sistema mediante mecanismos de contagio financiero, como quedó evidenciado durante la crisis hipotecaria de 2008, que tuvo repercusiones económicas en prácticamente todo el planeta.',
+      difficultyId: advanced.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Estructura de datos: árbol binario',
+      content:
+        'class TreeNode {\n  value: number;\n  left: TreeNode | null = null;\n  right: TreeNode | null = null;\n  constructor(value: number) {\n    this.value = value;\n  }\n  insert(value: number): void {\n    if (value < this.value) {\n      this.left ? this.left.insert(value) : (this.left = new TreeNode(value));\n    } else {\n      this.right ? this.right.insert(value) : (this.right = new TreeNode(value));\n    }\n  }\n}',
+      difficultyId: advanced.id,
+      typeId: code.id,
+      languageId: spanish.id,
+    },
+
+    // ============================================
+    // EXPERTO (10 adicionales)
+    // ============================================
+    {
+      title: 'Criptografía asimétrica y blockchain',
+      content:
+        'Los sistemas de criptografía asimétrica —basados en pares de claves pública y privada— constituyen el fundamento matemático sobre el cual operan las tecnologías de blockchain contemporáneas. Cada transacción se firma digitalmente mediante la clave privada del emisor, permitiendo que cualquier nodo de la red verifique su autenticidad usando la clave pública correspondiente, sin revelar jamás la clave privada original. Este mecanismo, combinado con funciones hash criptográficas (como SHA-256) y estructuras de datos encadenadas e inmutables, garantiza la integridad del registro distribuido incluso en ausencia de una autoridad central de confianza.',
+      difficultyId: expert.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Algoritmo de Dijkstra',
+      content:
+        'function dijkstra(graph: Map<string, Map<string, number>>, start: string): Map<string, number> {\n  const distances = new Map<string, number>();\n  const visited = new Set<string>();\n  for (const node of graph.keys()) distances.set(node, Infinity);\n  distances.set(start, 0);\n  while (visited.size < graph.size) {\n    const [current] = [...distances.entries()]\n      .filter(([node]) => !visited.has(node))\n      .sort((a, b) => a[1] - b[1])[0];\n    visited.add(current);\n    for (const [neighbor, weight] of graph.get(current) ?? []) {\n      const newDist = distances.get(current)! + weight;\n      if (newDist < (distances.get(neighbor) ?? Infinity)) distances.set(neighbor, newDist);\n    }\n  }\n  return distances;\n}',
+      difficultyId: expert.id,
+      typeId: code.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Política monetaria y macroeconomía',
+      content:
+        'Cuando un banco central decide modificar la tasa de interés de referencia, desencadena una cascada de efectos sobre el consumo, la inversión y el tipo de cambio que puede tardar entre doce y veinticuatro meses en manifestarse plenamente —el llamado "rezago de la política monetaria"—. Un incremento de tasas, orientado a contener la inflación, encarece el crédito hipotecario y empresarial, desincentivando el gasto; sin embargo, si la intervención es demasiado agresiva, puede inducir una contracción económica no deseada, razón por la cual los bancos centrales deben calibrar sus decisiones con extrema cautela, monitoreando indicadores como el IPC, la tasa de desempleo y las expectativas de mercado.',
+      difficultyId: expert.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Filosofía del lenguaje: Wittgenstein',
+      content:
+        'En su obra tardía, Ludwig Wittgenstein abandonó la idea de que el lenguaje funciona como un sistema lógico-representacional exacto, proponiendo en su lugar el concepto de "juegos del lenguaje": el significado de una palabra no reside en una correspondencia fija con un objeto del mundo, sino en su uso concreto dentro de una práctica social determinada. Esta ruptura con el atomismo lógico de su primera etapa —expuesto en el Tractatus Logico-Philosophicus— transformó radicalmente la filosofía analítica del siglo XX, influyendo en disciplinas tan diversas como la lingüística, la antropología y las ciencias cognitivas.',
+      difficultyId: expert.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Medicina genómica de precisión',
+      content:
+        'La secuenciación masiva del genoma humano, cuyo costo se ha reducido más de un 99% desde el año 2003, permite hoy identificar variantes genéticas asociadas a enfermedades específicas y diseñar tratamientos personalizados según el perfil molecular de cada paciente. En oncología, por ejemplo, el análisis del ADN tumoral posibilita seleccionar terapias dirigidas que atacan mutaciones concretas (como EGFR o BRCA1/2), incrementando notablemente las tasas de respuesta clínica frente a los protocolos de quimioterapia convencional, aunque persisten importantes desafíos éticos relacionados con la privacidad de los datos genéticos y el acceso equitativo a estas tecnologías.',
+      difficultyId: expert.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Astrofísica: agujeros negros supermasivos',
+      content:
+        'En el centro de la mayoría de las galaxias masivas —incluida la Vía Láctea— reside un agujero negro supermasivo cuya masa puede equivaler a millones o incluso miles de millones de veces la del Sol. La primera imagen directa de uno de estos objetos, capturada en 2019 por el Event Horizon Telescope en la galaxia M87, confirmó predicciones fundamentales de la relatividad general de Einstein, revelando un anillo de luz curvada alrededor del horizonte de sucesos: el punto de no retorno más allá del cual ni siquiera la luz puede escapar.',
+      difficultyId: expert.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Ciberseguridad y vectores de ataque',
+      content:
+        'Los ataques de tipo "cadena de suministro" (supply chain attacks) han cobrado relevancia crítica en el panorama de ciberseguridad actual, dado que comprometen dependencias de software legítimas y ampliamente confiables —bibliotecas, paquetes npm, actualizaciones automáticas— para infiltrar código malicioso en miles de sistemas simultáneamente sin necesidad de vulnerar directamente al objetivo final. Casos como SolarWinds (2020) demostraron que incluso organizaciones con infraestructuras de seguridad robustas permanecen expuestas cuando la confianza depositada en terceros no se somete a auditorías rigurosas y continuas.',
+      difficultyId: expert.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Derecho constitucional comparado',
+      content:
+        'El control de constitucionalidad —mecanismo mediante el cual un tribunal evalúa la compatibilidad de una norma con la Constitución— adopta modelos sustancialmente distintos según la tradición jurídica de cada país: el sistema difuso, característico de Estados Unidos, permite que cualquier juez ordinario declare la inaplicabilidad de una ley en un caso concreto; en cambio, el sistema concentrado, predominante en Europa continental y gran parte de Latinoamérica, reserva esa facultad exclusivamente a un tribunal constitucional especializado, cuyas sentencias suelen tener efectos generales (erga omnes) sobre la totalidad del ordenamiento jurídico.',
+      difficultyId: expert.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Geopolítica energética del siglo XXI',
+      content:
+        'La transición hacia fuentes de energía renovable no solo redefine la matriz eléctrica global, sino que también reconfigura el mapa geopolítico tradicionalmente dominado por los países exportadores de petróleo y gas natural. Naciones que concentran reservas estratégicas de litio, cobalto y tierras raras —minerales indispensables para baterías y tecnologías limpias— como Chile, la República Democrática del Congo y Australia, emergen como nuevos actores de peso en las negociaciones internacionales, mientras que las potencias tradicionales del petróleo enfrentan el desafío de diversificar sus economías ante la previsible caída de la demanda de combustibles fósiles a mediano plazo.',
+      difficultyId: expert.id,
+      typeId: article.id,
+      languageId: spanish.id,
+    },
+    {
+      title: 'Ética aplicada a sistemas autónomos',
+      content:
+        'El denominado "problema del tranvía", clásico dilema de la filosofía moral, ha resurgido con fuerza inusitada en el diseño de vehículos autónomos: ¿debe un automóvil sin conductor priorizar la vida de sus ocupantes o la de los peatones en un escenario de colisión inevitable? A diferencia del experimento mental original, estas decisiones ya no permanecen en el terreno puramente hipotético, sino que deben codificarse explícitamente en algoritmos de toma de decisiones, obligando a ingenieros, legisladores y filósofos a colaborar en la construcción de marcos normativos que, hasta el momento, carecen de consenso universal.',
+      difficultyId: expert.id,
+      typeId: paragraph.id,
+      languageId: spanish.id,
+    },
   ];
 
   const createdTexts: { id: number }[] = [];
