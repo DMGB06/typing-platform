@@ -38,7 +38,7 @@ export class AuthController {
 
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie(ACCESS_TOKEN_COOKIE);
+    res.clearCookie(ACCESS_TOKEN_COOKIE, this.cookieAttrs());
     return { success: true };
   }
 
@@ -48,10 +48,22 @@ export class AuthController {
     rememberMe?: boolean,
   ): void {
     res.cookie(ACCESS_TOKEN_COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.COOKIE_SECURE !== 'false',
-      sameSite: 'lax',
+      ...this.cookieAttrs(),
       maxAge: rememberMe ? REMEMBER_ME_MAX_AGE_MS : SESSION_MAX_AGE_MS,
     });
+  }
+
+  // Frontend y backend viven en dominios distintos en producción (Vercel /
+  // Render), así que la cookie necesita SameSite=None para viajar en
+  // fetch(credentials:'include') cross-origin - eso exige Secure=true
+  // (los navegadores rechazan SameSite=None sin Secure). En local, ambos
+  // corren en localhost sobre HTTP, así que se usa Lax + no-secure.
+  private cookieAttrs() {
+    const secure = process.env.COOKIE_SECURE !== 'false';
+    return {
+      httpOnly: true,
+      secure,
+      sameSite: secure ? ('none' as const) : ('lax' as const),
+    };
   }
 }

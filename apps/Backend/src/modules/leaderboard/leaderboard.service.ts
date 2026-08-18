@@ -5,9 +5,7 @@ import { PrismaService } from '../../Prisma/prisma.service';
 export class LeaderboardService {
   constructor(private prisma: PrismaService) {}
 
-  async getByDifficulty(
-    difficultyId: number,
-  ): Promise<
+  async getByDifficulty(difficultyId: number): Promise<
     Array<{
       username: string;
       bestWpm: number;

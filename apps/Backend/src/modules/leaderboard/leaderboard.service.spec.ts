@@ -68,9 +68,7 @@ describe('LeaderboardService', () => {
       await expect(service.getByDifficulty(999)).rejects.toThrow(
         NotFoundException,
       );
-      expect(
-        prismaMock.userStatsByDifficulty.findMany,
-      ).not.toHaveBeenCalled();
+      expect(prismaMock.userStatsByDifficulty.findMany).not.toHaveBeenCalled();
     });
 
     it('consulta userStatsByDifficulty ordenado por bestWpm desc, top 10', async () => {

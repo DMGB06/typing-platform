@@ -11,8 +11,11 @@ export function configureApp(app: INestApplication): void {
   app.use(cookieParser());
   app.use(helmet());
 
+  const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+  if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: allowedOrigins,
     credentials: true,
   });
 

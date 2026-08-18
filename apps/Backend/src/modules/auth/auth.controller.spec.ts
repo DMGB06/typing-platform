@@ -52,7 +52,11 @@ describe('AuthController', () => {
       expect(res.cookie).toHaveBeenCalledWith(
         ACCESS_TOKEN_COOKIE,
         'signed-jwt',
-        expect.objectContaining({ httpOnly: true, sameSite: 'lax' }),
+        expect.objectContaining({
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+        }),
       );
       expect(result).toEqual({ user });
       expect(result).not.toHaveProperty('token');
@@ -80,11 +84,40 @@ describe('AuthController', () => {
         'signed-jwt',
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'lax',
+          secure: true,
+          sameSite: 'none',
           maxAge: 24 * 60 * 60 * 1000,
         }),
       );
       expect(result).toEqual({ user });
+    });
+
+    it('falls back to SameSite=Lax and a non-secure cookie when COOKIE_SECURE=false (local dev)', async () => {
+      const original = process.env.COOKIE_SECURE;
+      process.env.COOKIE_SECURE = 'false';
+      try {
+        const res = mockResponse();
+        const user = {
+          id: 1,
+          username: 'ana',
+          email: 'ana@test.com',
+          role: 'USER',
+        };
+        mockAuthService.login.mockResolvedValue({ user, token: 'signed-jwt' });
+
+        await controller.login(
+          { email: 'ana@test.com', password: 'Password123' },
+          res,
+        );
+
+        expect(res.cookie).toHaveBeenCalledWith(
+          ACCESS_TOKEN_COOKIE,
+          'signed-jwt',
+          expect.objectContaining({ secure: false, sameSite: 'lax' }),
+        );
+      } finally {
+        process.env.COOKIE_SECURE = original;
+      }
     });
 
     it('sets a longer-lived cookie when rememberMe is true', async () => {
@@ -116,7 +149,14 @@ describe('AuthController', () => {
 
       const result = controller.logout(res);
 
-      expect(res.clearCookie).toHaveBeenCalledWith(ACCESS_TOKEN_COOKIE);
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        ACCESS_TOKEN_COOKIE,
+        expect.objectContaining({
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+        }),
+      );
       expect(result).toEqual({ success: true });
     });
   });

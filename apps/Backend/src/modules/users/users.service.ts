@@ -346,7 +346,7 @@ export class UsersService {
     });
 
     return {
-      defaultDifficultyId: user.defaultDifficultyId as number | null,
+      defaultDifficultyId: user.defaultDifficultyId,
     };
   }
 
@@ -370,7 +370,7 @@ export class UsersService {
     });
 
     return {
-      defaultDifficultyId: updated.defaultDifficultyId as number | null,
+      defaultDifficultyId: updated.defaultDifficultyId,
     };
   }
 }
