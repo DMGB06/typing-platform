@@ -116,7 +116,7 @@ export const Navbar: React.FC = () => {
                                 <Link
                                     key={href}
                                     href={href}
-                                    className="flex items-center justify-center w-10 h-10 rounded transition-colors duration-200 hover:bg-[var(--color-hover)]"
+                                    className="flex items-center justify-center w-10 h-10 rounded transition-colors duration-300 hover:bg-[var(--color-hover)]"
                                     style={{
                                         color: isActive(href) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
                                         backgroundColor: isActive(href) ? 'var(--color-bg-tertiary)' : undefined,
@@ -204,7 +204,7 @@ export const Navbar: React.FC = () => {
                         {/* Toggle de tema claro/oscuro - siempre visible */}
                         <button
                             onClick={toggleTheme}
-                            className="flex items-center justify-center w-10 h-10 rounded transition-colors duration-200 hover:bg-[var(--color-hover)]"
+                            className="flex items-center justify-center w-10 h-10 rounded transition-colors duration-300 hover:bg-[var(--color-hover)]"
                             style={{ color: 'var(--color-text-secondary)' }}
                             aria-label={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
                             title={theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}

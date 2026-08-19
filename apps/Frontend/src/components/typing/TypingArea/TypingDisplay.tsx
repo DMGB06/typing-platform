@@ -191,7 +191,7 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
 
       {/* Área de Texto */}
       <div
-        className="rounded-xl p-8 relative focus-within:ring-2 focus-within:ring-(--color-accent) transition-all"
+        className="rounded-xl p-8 relative focus-within:ring-2 focus-within:ring-(--color-accent) transition-all duration-300"
         style={{ backgroundColor: 'var(--color-bg-secondary)' }}
         tabIndex={loading ? -1 : 0}
         onKeyDown={handleKeyPress}
