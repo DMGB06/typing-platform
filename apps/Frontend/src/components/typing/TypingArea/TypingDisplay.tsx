@@ -147,9 +147,11 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
 
     // Lógica de tecleo (simplificada)
     if (e.key === 'Backspace') {
+      e.preventDefault();
       setUserInput(prev => prev.slice(0, -1));
       setCurrentIndex(prev => Math.max(0, prev - 1));
     } else if (e.key.length === 1) {
+      e.preventDefault(); // evita que la barra espaciadora scrollee la página
       const newInput = userInput + e.key;
       setUserInput(newInput);
       setCurrentIndex(newInput.length);
