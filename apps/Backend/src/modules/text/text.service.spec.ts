@@ -53,7 +53,14 @@ describe('TextService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TextService,
-        { provide: PrismaService, useValue: mockPrisma },
+        {
+          provide: PrismaService,
+          useValue: {
+            ...mockPrisma,
+            $transaction: (run: (tx: typeof mockPrisma) => Promise<unknown>) =>
+              run(mockPrisma),
+          },
+        },
       ],
     }).compile();
 
@@ -152,7 +159,7 @@ describe('TextService', () => {
 
       expect(result).toEqual(text);
       expect(mockPrisma.text.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 1 } }),
+        expect.objectContaining({ where: { id: 1, isActive: true } }),
       );
     });
 

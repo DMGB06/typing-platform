@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TextController } from './text.controller';
+import { TextService as PublicTextService } from '../../text/text.service';
 import { TextService } from './text.service';
 import {
   CreateTextDto,
@@ -18,6 +19,7 @@ describe('TextController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TextController],
       providers: [
+        { provide: PublicTextService, useValue: { getTextStats: jest.fn() } },
         {
           provide: TextService,
           useValue: {

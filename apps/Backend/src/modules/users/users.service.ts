@@ -11,6 +11,7 @@ import * as bycript from 'bcrypt';
 import { UpdateUserDto } from './dto/user_dto';
 import { CurrentUser } from '../../types/user.types';
 import { Prisma } from '@prisma/client';
+import { paginated, PaginationDto } from '../../common/pagination.dto';
 
 @Injectable()
 export class UsersService {
@@ -127,22 +128,30 @@ export class UsersService {
   }
 
   // Obtener todos los usuarios (solo ADMIN)
-  async getAllUsers() {
-    try {
-      const users = await this.prisma.user.findMany({
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          role: true,
-          isActive: true,
-        },
-      });
-
-      return users;
-    } catch (error) {
-      console.error('Error al obtener usuarios:', error as Error);
-    }
+  async getAllUsers(pagination: PaginationDto) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const total = await tx.user.count();
+        const { page, limit } = pagination;
+        const data =
+          page <= Math.ceil(total / limit)
+            ? await tx.user.findMany({
+                skip: (page - 1) * limit,
+                take: limit,
+                orderBy: { id: 'asc' },
+                select: {
+                  id: true,
+                  username: true,
+                  email: true,
+                  role: true,
+                  isActive: true,
+                },
+              })
+            : [];
+        return paginated(data, pagination, total);
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
   }
 
   // Eliminar usuario (desactivar cuenta) (solo ADMIN)

@@ -33,6 +33,7 @@ model Difficulty {
 
   // Relaciones
   texts Text[]
+  attempts TypingAttempt[]
   stats UserStatsByDifficulty[]
   usersWithDefault  User[]
   notifications Notification[]
@@ -84,6 +85,7 @@ model User {
   defaultDifficulty   Difficulty? @relation(fields: [defaultDifficultyId], references: [id])
 
   // Relaciones
+  attempts      TypingAttempt[]
   sessions      TypingSession[]
   stats         UserStatsByDifficulty[]
   textHistory   UserTextHistory[]
@@ -113,6 +115,7 @@ model Text {
   type        TextType          @relation(fields: [typeId], references: [id])  // ⭐ AGREGADO
   language    Language          @relation(fields: [languageId], references: [id])
   createdBy   User              @relation(fields: [createdById], references: [id])
+  attempts    TypingAttempt[]
   sessions    TypingSession[]
   textHistory UserTextHistory[]
 
@@ -134,6 +137,9 @@ model UserStatsByDifficulty {
   totalSessions    Int      @default(0) @map("total_sessions")
   totalTimeSeconds Int      @default(0) @map("total_time_seconds")
   avgErrorRate     Float    @default(0) @map("avg_error_rate")
+  wpmCount         Int      @default(0) @map("wpm_count")
+  accuracyCount    Int      @default(0) @map("accuracy_count")
+  errorRateCount   Int      @default(0) @map("error_rate_count")
 
   // Relaciones
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -148,10 +154,32 @@ model UserStatsByDifficulty {
 // SESIONES Y ERRORES
 // ============================================
 
+model TypingAttempt {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       Int      @map("user_id")
+  textId       Int      @map("text_id")
+  difficultyId Int     @map("difficulty_id")
+  contentHash  String   @map("content_hash")
+  eventsHash   String?  @map("events_hash")
+  startedAt    DateTime @default(now()) @map("started_at")
+  expiresAt    DateTime @map("expires_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text         Text          @relation(fields: [textId], references: [id], onDelete: Cascade)
+  difficulty   Difficulty    @relation(fields: [difficultyId], references: [id])
+  session      TypingSession?
+
+  @@index([difficultyId, userId])
+  @@index([userId])
+  @@index([textId])
+  @@map("typing_attempts")
+}
+
 model TypingSession {
   id              Int      @id @default(autoincrement())
   userId          Int      @map("user_id")
   textId          Int      @map("text_id")
+  attemptId       String?  @unique @map("attempt_id") @db.Uuid
   wpm             Int?
   accuracy        Float?
   timeSeconds     Int?     @map("time_seconds")
@@ -163,8 +191,10 @@ model TypingSession {
   user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   text   Text          @relation(fields: [textId], references: [id])
   errors TypingError[]
+  attempt TypingAttempt? @relation(fields: [attemptId], references: [id], onDelete: NoAction)
 
   @@index([userId, createdAt], name: "idx_user_sessions")
+  @@index([userId, textId, createdAt(sort: Desc), id(sort: Desc)], map: "idx_user_text_sessions")
   @@map("typing_sessions")
 }
 

@@ -28,18 +28,17 @@ describe('TextController', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('listTexts', () => {
-    it('debe delegar al servicio con los DTOs recibidos', async () => {
-      const pagination: TextPaginationDto = { page: 1, limit: 10 };
-      const filter: TextFilterDto = { difficultyId: 1 };
+    it('debe delegar al servicio con la paginación y los filtros', async () => {
+      const query: TextPaginationDto = { page: 1, limit: 10, difficultyId: 1 };
       const expected = { data: [], meta: {} };
 
       mockTextService.listTexts.mockResolvedValue(expected);
 
-      const result = await controller.listTexts(pagination, filter);
+      const result = await controller.listTexts(query);
 
       expect(mockTextService.listTexts).toHaveBeenCalledWith(
-        pagination,
-        filter,
+        { page: 1, limit: 10 },
+        { difficultyId: 1 },
       );
       expect(result).toEqual(expected);
     });

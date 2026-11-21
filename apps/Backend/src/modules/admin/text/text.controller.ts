@@ -1,3 +1,4 @@
+import { TextService as PublicTextService } from '../../text/text.service';
 import {
   Controller,
   Get,
@@ -28,7 +29,15 @@ import { AdminGuard } from '../../../common/decorators/guards/admin.guard';
 @Controller('admin/text')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class TextController {
-  constructor(private readonly textService: TextService) {}
+  constructor(
+    private readonly textService: TextService,
+    private readonly publicTextService: PublicTextService,
+  ) {}
+
+  @Get(':id/stats')
+  getTextStats(@Param('id', ParseIntPipe) id: number) {
+    return this.publicTextService.getTextStats(id, true);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

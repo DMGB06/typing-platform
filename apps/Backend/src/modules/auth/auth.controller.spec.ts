@@ -20,6 +20,10 @@ describe('AuthController', () => {
     }) as unknown as Response;
 
   beforeEach(async () => {
+    jest.replaceProperty(process, 'env', {
+      ...process.env,
+      COOKIE_SECURE: 'true',
+    });
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [{ provide: AuthService, useValue: mockAuthService }],
@@ -27,6 +31,10 @@ describe('AuthController', () => {
 
     controller = module.get<AuthController>(AuthController);
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {

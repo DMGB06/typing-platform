@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../Prisma/prisma.service';
 import { TextPaginationDto } from './dto/text.dto';
 import { TextFilterDto } from './dto/text-filter.dto';
+import { activeText } from './text-visibility';
 
 @Injectable()
 export class TextService {
@@ -12,7 +13,7 @@ export class TextService {
     filterDto: TextFilterDto,
     search?: string,
   ): Prisma.TextWhereInput {
-    const where: Prisma.TextWhereInput = { isActive: true };
+    const where: Prisma.TextWhereInput = { ...activeText };
 
     if (search) {
       where.OR = [
@@ -84,6 +85,7 @@ export class TextService {
 
     const randomText = await this.prisma.text.findMany({
       skip: randomIndex,
+      orderBy: { id: 'asc' },
       take: 1,
       where,
       select: {
@@ -100,12 +102,13 @@ export class TextService {
       },
     });
 
+    if (!randomText[0]) throw new NotFoundException('No se encontraron textos');
     return randomText[0];
   }
 
   async getTextById(id: number) {
     const text = await this.prisma.text.findUnique({
-      where: { id },
+      where: { id, ...activeText },
       select: {
         id: true,
         title: true,
@@ -128,59 +131,65 @@ export class TextService {
     return text;
   }
 
-  async getTextStats(id: number) {
-    const textExists = await this.prisma.text.findUnique({
-      where: { id },
-      select: { id: true, title: true },
-    });
+  async getTextStats(id: number, includeInactive = false) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const textExists = await tx.text.findUnique({
+          where: { id, ...(includeInactive ? {} : activeText) },
+          select: { id: true, title: true },
+        });
 
-    if (!textExists) {
-      throw new NotFoundException(`Texto con ID ${id} no encontrado`);
-    }
+        if (!textExists) {
+          throw new NotFoundException(`Texto con ID ${id} no encontrado`);
+        }
 
-    const sessionWhere: Prisma.TypingSessionWhereInput = {
-      textId: id,
-      wpm: { not: null },
-    };
+        const sessionWhere: Prisma.TypingSessionWhereInput = {
+          textId: id,
+          attemptId: { not: null },
+          user: { isActive: true },
+        };
 
-    const [topSessions, stats] = await Promise.all([
-      this.prisma.typingSession.findMany({
-        where: sessionWhere,
-        take: 10,
-        orderBy: [{ wpm: 'desc' }, { accuracy: 'desc' }],
-        select: {
-          id: true,
-          wpm: true,
-          accuracy: true,
-          timeSeconds: true,
-          errorRate: true,
-          createdAt: true,
-          user: { select: { id: true, username: true } },
-        },
-      }),
-      this.prisma.typingSession.aggregate({
-        where: sessionWhere,
-        _avg: { wpm: true, accuracy: true, errorRate: true },
-        _max: { wpm: true, accuracy: true },
-        _count: { id: true },
-      }),
-    ]);
+        const [topSessions, stats] = await Promise.all([
+          tx.typingSession.findMany({
+            where: sessionWhere,
+            take: 10,
+            orderBy: [{ wpm: 'desc' }, { accuracy: 'desc' }, { id: 'asc' }],
+            select: {
+              id: true,
+              wpm: true,
+              accuracy: true,
+              timeSeconds: true,
+              errorRate: true,
+              createdAt: true,
+              user: { select: { id: true, username: true } },
+            },
+          }),
+          tx.typingSession.aggregate({
+            where: sessionWhere,
+            _avg: { wpm: true, accuracy: true, errorRate: true },
+            _max: { wpm: true, accuracy: true },
+            _count: { id: true },
+          }),
+        ]);
 
-    return {
-      text: { id: textExists.id, title: textExists.title },
-      topSessions,
-      stats: {
-        totalAttempts: stats._count.id,
-        avgWpm: stats._avg.wpm ? Math.round(stats._avg.wpm) : 0,
-        avgAccuracy: stats._avg.accuracy
-          ? Math.round(stats._avg.accuracy * 100) / 100
-          : 0,
-        avgErrorRate: stats._avg.errorRate
-          ? Math.round(stats._avg.errorRate * 100) / 100
-          : 0,
-        maxWpm: stats._max.wpm ?? 0,
-        maxAccuracy: stats._max.accuracy ?? 0,
+        return {
+          text: { id: textExists.id, title: textExists.title },
+          topSessions,
+          stats: {
+            totalAttempts: stats._count.id,
+            avgWpm: stats._avg.wpm ? Math.round(stats._avg.wpm) : 0,
+            avgAccuracy: stats._avg.accuracy
+              ? Math.round(stats._avg.accuracy * 100) / 100
+              : 0,
+            avgErrorRate: stats._avg.errorRate
+              ? Math.round(stats._avg.errorRate * 100) / 100
+              : 0,
+            maxWpm: stats._max.wpm ?? 0,
+            maxAccuracy: stats._max.accuracy ?? 0,
+          },
+        };
       },
-    };
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
   }
 }

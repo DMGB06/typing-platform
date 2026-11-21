@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Param,
+  Query,
   Body,
   UseGuards,
   ParseIntPipe,
@@ -10,14 +11,22 @@ import {
 import { TypingSessionsService } from './typing-sessions.service';
 import { JwtAuthGuard } from '../auth/guards/wt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CreateTypingSessionDto } from './dto/typing.dto';
+import { PaginationDto } from '../../common/pagination.dto';
+import {
+  CreateTypingSessionDto,
+  StartTypingSessionDto,
+} from './dto/typing.dto';
 
 @Controller('typing-sessions')
 @UseGuards(JwtAuthGuard)
 export class TypingSessionsController {
   constructor(private readonly typingSessionsService: TypingSessionsService) {}
 
-  // POST /typing-sessions
+  @Post('start')
+  start(@CurrentUser('id') userId: number, @Body() dto: StartTypingSessionDto) {
+    return this.typingSessionsService.start(userId, dto);
+  }
+
   @Post()
   create(
     @CurrentUser('id') userId: number,
@@ -37,8 +46,9 @@ export class TypingSessionsController {
   getByText(
     @CurrentUser('id') userId: number,
     @Param('textId', ParseIntPipe) textId: number,
+    @Query() pagination: PaginationDto,
   ) {
-    return this.typingSessionsService.findByText(textId, userId);
+    return this.typingSessionsService.findByText(textId, userId, pagination);
   }
 
   // GET /typing-sessions/:id

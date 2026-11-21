@@ -43,11 +43,8 @@ export interface TextFiltersProps {
 // ── Sesiones de typing ────────────────────────────────────────
 
 export interface CreateTypingSessionRequest {
-  textId: number;
-  wpm?: number;
-  accuracy?: number;
-  timeSeconds?: number;
-  errorRate?: number;
+  attemptId: string;
+  events: string[];
 }
 
 export interface TypingSessionResponse {

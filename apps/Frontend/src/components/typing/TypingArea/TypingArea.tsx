@@ -105,6 +105,7 @@ export const TypingArea: React.FC = () => {
 
       {/* Área de Escritura */}
       <TypingDisplay
+        key={`${filters.typeId}:${filters.difficultyId}:${filters.languageId}`}
         filters={filters}
         isStarted={isStarted}
         onStart={() => setIsStarted(true)}

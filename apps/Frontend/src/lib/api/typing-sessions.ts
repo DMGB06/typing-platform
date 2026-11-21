@@ -12,6 +12,13 @@ import type {
 } from "@/types";
 import { apiClient } from "./client";
 
+export function startTypingSession(textId: number) {
+  return apiClient<{ attemptId: string; startedAt: string; expiresAt: string }>(
+    "/typing-sessions/start",
+    { method: "POST", body: { textId } },
+  );
+}
+
 export function createTypingSession(
   data: CreateTypingSessionRequest,
 ): Promise<TypingSessionResponse> {

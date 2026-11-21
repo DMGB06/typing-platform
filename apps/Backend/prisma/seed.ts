@@ -1,9 +1,25 @@
-import { PrismaClient, UserRole } from '@prisma/client';
+import { Prisma, PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
-const prisma = new PrismaClient();
+function readPassword(name: string) {
+  const value = process.env[name];
+  if (!value || Array.from(value).length < 12 || Buffer.byteLength(value) > 72 ||
+      !value.trim() || value.includes('\0')) {
+    throw new Error(`${name} must contain at least 12 characters and at most 72 UTF-8 bytes`);
+  }
+  return value;
+}
 
-async function main() {
+const passwordNames = {
+  admin: 'DEMO_ADMIN_PASSWORD',
+  alice: 'DEMO_ALICE_PASSWORD',
+  bob: 'DEMO_BOB_PASSWORD',
+  carlos: 'DEMO_CARLOS_PASSWORD',
+} as const;
+
+async function seed(prisma: Prisma.TransactionClient, passwords: Record<keyof typeof passwordNames, string>) {
   console.log('🌱 Starting seed...');
 
   // ============================================
@@ -118,7 +134,7 @@ async function main() {
   // ============================================
   // USERS
   // ============================================
-  const saltRounds = 10;
+  const saltRounds = 12;
 
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@typingplatform.com' },
@@ -126,7 +142,7 @@ async function main() {
     create: {
       username: 'admin',
       email: 'admin@typingplatform.com',
-      passwordHash: await bcrypt.hash('Admin1234!', saltRounds),
+      passwordHash: await bcrypt.hash(passwords.admin, saltRounds),
       role: UserRole.ADMIN,
     },
   });
@@ -138,7 +154,7 @@ async function main() {
       create: {
         username: 'alice',
         email: 'alice@example.com',
-        passwordHash: await bcrypt.hash('Alice1234!', saltRounds),
+        passwordHash: await bcrypt.hash(passwords.alice, saltRounds),
         role: UserRole.USER,
       },
     }),
@@ -148,7 +164,7 @@ async function main() {
       create: {
         username: 'bob',
         email: 'bob@example.com',
-        passwordHash: await bcrypt.hash('Bob1234!', saltRounds),
+        passwordHash: await bcrypt.hash(passwords.bob, saltRounds),
         role: UserRole.USER,
       },
     }),
@@ -158,14 +174,12 @@ async function main() {
       create: {
         username: 'carlos',
         email: 'carlos@example.com',
-        passwordHash: await bcrypt.hash('Carlos1234!', saltRounds),
+        passwordHash: await bcrypt.hash(passwords.carlos, saltRounds),
         role: UserRole.USER,
       },
     }),
   ]);
-  console.log(
-    `✅ Users seeded: ${[adminUser, ...regularUsers].map((u) => u.username).join(', ')}`,
-  );
+  console.log('Demo accounts seeded');
 
   // ============================================
   // TEXTS
@@ -637,155 +651,64 @@ async function main() {
   ];
 
   const createdSessions: { id: number }[] = [];
-  for (const s of sessionsData) {
-    const session = await prisma.typingSession.create({ data: s });
+  for (const data of sessionsData) {
+    const session = (await prisma.typingSession.findFirst({
+      where: { ...data, attemptId: null },
+      orderBy: { id: 'asc' },
+    })) ?? await prisma.typingSession.create({ data });
     createdSessions.push(session);
   }
-  console.log(`✅ TypingSessions seeded: ${createdSessions.length} sessions`);
 
-  // Some typing errors for the first two sessions
-  await prisma.typingError.createMany({
-    data: [
-      { sessionId: createdSessions[0].id, wrongWord: 'trnaquilo', correctWord: 'tranquilo', position: 4 },
-      { sessionId: createdSessions[0].id, wrongWord: 'sofá',     correctWord: 'sofá',      position: 7 },
-      { sessionId: createdSessions[3].id, wrongWord: 'dormia',   correctWord: 'dormía',    position: 2 },
-    ],
-  });
-  console.log('✅ TypingErrors seeded');
-
-  // ============================================
-  // USER STATS BY DIFFICULTY
-  // ============================================
-  const statsData = [
-    {
-      userId: alice.id,
-      difficultyId: beginner.id,
-      bestWpm: 52,
-      avgWpm: 48.5,
-      avgAccuracy: 97.85,
-      totalSessions: 2,
-      totalTimeSeconds: 56,
-      avgErrorRate: 2.15,
-    },
-    {
-      userId: alice.id,
-      difficultyId: intermediate.id,
-      bestWpm: 48,
-      avgWpm: 48.0,
-      avgAccuracy: 95.0,
-      totalSessions: 1,
-      totalTimeSeconds: 80,
-      avgErrorRate: 5.0,
-    },
-    {
-      userId: bob.id,
-      difficultyId: beginner.id,
-      bestWpm: 38,
-      avgWpm: 38.0,
-      avgAccuracy: 92.0,
-      totalSessions: 1,
-      totalTimeSeconds: 37,
-      avgErrorRate: 8.0,
-    },
-    {
-      userId: bob.id,
-      difficultyId: intermediate.id,
-      bestWpm: 42,
-      avgWpm: 42.0,
-      avgAccuracy: 94.5,
-      totalSessions: 1,
-      totalTimeSeconds: 90,
-      avgErrorRate: 5.5,
-    },
-    {
-      userId: bob.id,
-      difficultyId: advanced.id,
-      bestWpm: 35,
-      avgWpm: 35.0,
-      avgAccuracy: 88.0,
-      totalSessions: 1,
-      totalTimeSeconds: 120,
-      avgErrorRate: 12.0,
-    },
+  const errors = [
+    { sessionId: createdSessions[0].id, wrongWord: 'trnaquilo', correctWord: 'tranquilo', position: 4 },
+    { sessionId: createdSessions[0].id, wrongWord: 'sof\u00e1', correctWord: 'sof\u00e1', position: 7 },
+    { sessionId: createdSessions[3].id, wrongWord: 'dormia', correctWord: 'dorm\u00eda', position: 2 },
   ];
-
-  for (const stat of statsData) {
-    await prisma.userStatsByDifficulty.upsert({
-      where: { userId_difficultyId: { userId: stat.userId, difficultyId: stat.difficultyId } },
-      update: stat,
-      create: stat,
-    });
+  for (const data of errors) {
+    const existing = await prisma.typingError.findFirst({ where: data });
+    if (!existing) await prisma.typingError.create({ data });
   }
-  console.log(`✅ UserStatsByDifficulty seeded: ${statsData.length} records`);
 
-  // ============================================
-  // USER TEXT HISTORY
-  // ============================================
-  const historyData = [
-    {
-      userId: alice.id,
-      textId: createdTexts[0].id,
-      lastAttemptAt: new Date(),
-      totalAttempts: 2,
-      bestWpm: 52,
-      bestAccuracy: 98.2,
-    },
-    {
-      userId: alice.id,
-      textId: createdTexts[2].id,
-      lastAttemptAt: new Date(),
-      totalAttempts: 1,
-      bestWpm: 48,
-      bestAccuracy: 95.0,
-    },
-    {
-      userId: bob.id,
-      textId: createdTexts[0].id,
-      lastAttemptAt: new Date(),
-      totalAttempts: 1,
-      bestWpm: 38,
-      bestAccuracy: 92.0,
-    },
-    {
-      userId: bob.id,
-      textId: createdTexts[3].id,
-      lastAttemptAt: new Date(),
-      totalAttempts: 1,
-      bestWpm: 42,
-      bestAccuracy: 94.5,
-    },
-    {
-      userId: bob.id,
-      textId: createdTexts[5].id,
-      lastAttemptAt: new Date(),
-      totalAttempts: 1,
-      bestWpm: 35,
-      bestAccuracy: 88.0,
-    },
-  ];
-
-  for (const h of historyData) {
-    await prisma.userTextHistory.upsert({
-      where: { userId_textId: { userId: h.userId, textId: h.textId } },
-      update: { lastAttemptAt: h.lastAttemptAt, totalAttempts: h.totalAttempts, bestWpm: h.bestWpm, bestAccuracy: h.bestAccuracy },
-      create: h,
-    });
+  for (const file of ['rebuild-difficulty-stats.sql', 'rebuild-text-history.sql']) {
+    const sql = readFileSync(join(__dirname, 'maintenance', file), 'utf8');
+    // The only inputs are static, checked-in statements.
+    await prisma.$executeRawUnsafe(sql);
   }
-  console.log(`✅ UserTextHistory seeded: ${historyData.length} records`);
-
-  console.log('\n🎉 Seed completed successfully!');
-  console.log('\nCredentials:');
-  console.log('  Admin  → admin@typingplatform.com  / Admin1234!');
-  console.log('  Alice  → alice@example.com          / Alice1234!');
-  console.log('  Bob    → bob@example.com            / Bob1234!');
-  console.log('  Carlos → carlos@example.com         / Carlos1234!');
 }
 
-main()
-  .catch((e) => {
-    console.error('❌ Seed failed:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
+async function main() {
+  if (!['development', 'test'].includes(process.env.NODE_ENV ?? '') || process.env.ALLOW_DEMO_SEED !== 'true') {
+    console.error('Demo seed requires NODE_ENV=development or test and ALLOW_DEMO_SEED=true');
+    process.exitCode = 1;
+    return;
+  }
+
+  const passwords = {
+    admin: readPassword(passwordNames.admin),
+    alice: readPassword(passwordNames.alice),
+    bob: readPassword(passwordNames.bob),
+    carlos: readPassword(passwordNames.carlos),
+  };
+  if (new Set(Object.values(passwords)).size !== Object.keys(passwords).length) {
+    throw new Error('Each demo account requires a different password');
+  }
+
+  const prisma = new PrismaClient();
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`LOCK TABLE typing_sessions IN SHARE ROW EXCLUSIVE MODE`;
+      await seed(tx, passwords);
+    }, { timeout: 60_000 });
+    console.log('Demo seed completed');
+  } catch {
+    console.error('Demo seed failed. Check the database connection and migrations.');
+    process.exitCode = 1;
+  } finally {
     await prisma.$disconnect();
-  });
+  }
+}
+
+void main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : 'Demo seed failed');
+  process.exitCode = 1;
+});

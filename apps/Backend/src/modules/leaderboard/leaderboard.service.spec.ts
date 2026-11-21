@@ -19,13 +19,13 @@ const mockStats = [
     bestWpm: 87,
     avgAccuracy: 96.2,
     totalSessions: 14,
-    user: { username: 'ana' },
+    username: 'ana',
   },
   {
     bestWpm: 72,
     avgAccuracy: 91.5,
     totalSessions: 8,
-    user: { username: 'luis' },
+    username: 'luis',
   },
 ];
 
@@ -35,9 +35,7 @@ const prismaMock = {
   difficulty: {
     findFirst: jest.fn(),
   },
-  userStatsByDifficulty: {
-    findMany: jest.fn(),
-  },
+  $queryRaw: jest.fn(),
 };
 
 // ─── Suite ───────────────────────────────────────────────────────────────────
@@ -68,27 +66,12 @@ describe('LeaderboardService', () => {
       await expect(service.getByDifficulty(999)).rejects.toThrow(
         NotFoundException,
       );
-      expect(prismaMock.userStatsByDifficulty.findMany).not.toHaveBeenCalled();
-    });
-
-    it('consulta userStatsByDifficulty ordenado por bestWpm desc, top 10', async () => {
-      prismaMock.difficulty.findFirst.mockResolvedValue(mockDifficulty);
-      prismaMock.userStatsByDifficulty.findMany.mockResolvedValue(mockStats);
-
-      await service.getByDifficulty(2);
-
-      expect(prismaMock.userStatsByDifficulty.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { difficultyId: 2, user: { isActive: true } },
-          orderBy: [{ bestWpm: 'desc' }, { avgAccuracy: 'desc' }],
-          take: 10,
-        }),
-      );
+      expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
     });
 
     it('devuelve el ranking mapeado sin exponer email', async () => {
       prismaMock.difficulty.findFirst.mockResolvedValue(mockDifficulty);
-      prismaMock.userStatsByDifficulty.findMany.mockResolvedValue(mockStats);
+      prismaMock.$queryRaw.mockResolvedValue(mockStats);
 
       const result = await service.getByDifficulty(2);
 
@@ -100,7 +83,7 @@ describe('LeaderboardService', () => {
 
     it('devuelve un array vacío si nadie completó sesiones en esa dificultad', async () => {
       prismaMock.difficulty.findFirst.mockResolvedValue(mockDifficulty);
-      prismaMock.userStatsByDifficulty.findMany.mockResolvedValue([]);
+      prismaMock.$queryRaw.mockResolvedValue([]);
 
       const result = await service.getByDifficulty(2);
 

@@ -1,3 +1,4 @@
+import { PaginationDto } from '../../common/pagination.dto';
 import {
   Body,
   Put,
@@ -7,6 +8,7 @@ import {
   Post,
   ForbiddenException,
   Get,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { AdminGuard } from '../../common/decorators/guards/admin.guard';
@@ -54,8 +56,8 @@ export class UsersController {
 
   @Get('admin/all')
   @UseGuards(JwtAuthGuard, AdminGuard) //Solo administradores pueden ver la lista de usuarios
-  getAllUsers() {
-    return this.usersService.getAllUsers();
+  getAllUsers(@Query() pagination: PaginationDto) {
+    return this.usersService.getAllUsers(pagination);
   }
 
   @Get('admin/:id')

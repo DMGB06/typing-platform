@@ -10,10 +10,23 @@ jobs:
     defaults:
       run:
         working-directory: apps/Backend
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: typing_platform
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
-      # Prisma solo necesita una URL con forma valida para generar el
-      # cliente y tipar el codigo; no se conecta a una base real en este job.
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/typing_platform?schema=public"
+      TEST_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/typing_platform?schema=public"
       JWT_SECRET: "ci-only-secret-not-used-in-production"
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +45,10 @@ jobs:
       - run: pnpm exec prisma generate
       - run: pnpm run lint
       - run: pnpm run build
-      - run: pnpm run test
+      - run: pnpm run test --runInBand
+      - run: pnpm exec prisma migrate deploy
+      - run: bash test/text-type-recovery.sh
+      - run: pnpm run test:e2e --runInBand
 
   frontend:
     runs-on: ubuntu-latest

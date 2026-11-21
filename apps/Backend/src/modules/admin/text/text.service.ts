@@ -201,7 +201,7 @@ export class TextService {
   async getTextById(id: number) {
     // Sin try/catch aquí: el NotFoundException debe propagarse tal cual (HTTP 404)
     const text = await this.prisma.text.findUnique({
-      where: { id, isActive: true },
+      where: { id },
       include: {
         difficulty: true,
         type: true,

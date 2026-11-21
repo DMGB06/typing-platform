@@ -20,11 +20,9 @@ export class TextController {
 
   // GET /texts?page=1&limit=10&difficultyId=1&typeId=2&languageId=1
   @Get()
-  listTexts(
-    @Query() paginationDto: TextPaginationDto,
-    @Query() filterDto: TextFilterDto,
-  ) {
-    return this.textService.listTexts(paginationDto, filterDto);
+  listTexts(@Query() query: TextPaginationDto) {
+    const { page, limit, search, ...filters } = query;
+    return this.textService.listTexts({ page, limit, search }, filters);
   }
 
   // GET /texts/random?difficultyId=1

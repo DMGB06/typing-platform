@@ -1,82 +1,29 @@
 import {
-  IsInt,
-  IsOptional,
-  IsNumber,
-  IsPositive,
-  IsString,
+  ArrayNotEmpty,
   IsArray,
-  ValidateNested,
-  Min,
+  IsInt,
+  IsUUID,
+  Matches,
   Max,
+  Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
-// ------------------------------------------------
-// Error individual cometido durante la sesión
-// ------------------------------------------------
-export class TypingErrorDto {
-  @IsOptional()
-  @IsString()
-  wrongWord?: string;
+export const typingEventPattern =
+  /^(?:Backspace|[\t\n]|[^\p{Cc}\p{Cs}])$(?![\s\S])/u;
 
-  @IsOptional()
-  @IsString()
-  correctWord?: string;
-
-  @IsOptional()
+export class StartTypingSessionDto {
   @IsInt()
-  @Min(0)
-  position?: number;
+  @Min(1)
+  @Max(2147483647)
+  textId!: number;
 }
 
-// ------------------------------------------------
-// Body que envía el frontend al terminar una sesión
-// ------------------------------------------------
 export class CreateTypingSessionDto {
-  @IsInt()
-  @IsPositive()
-  textId!: number;
+  @IsUUID('4')
+  attemptId!: string;
 
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  wpm?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  accuracy?: number;
-
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  timeSeconds?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  errorRate?: number;
-
-  @IsOptional()
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TypingErrorDto)
-  errors?: TypingErrorDto[];
-}
-
-// ------------------------------------------------
-// Respuesta que devuelve el backend
-// ------------------------------------------------
-export class TypingSessionResponseDto {
-  id!: number;
-  userId!: number;
-  textId!: number;
-  wpm!: number | null;
-  accuracy!: number | null;
-  timeSeconds!: number | null;
-  errorRate!: number | null;
-  improvementRate!: number | null;
-  createdAt!: Date;
+  @ArrayNotEmpty()
+  @Matches(typingEventPattern, { each: true })
+  events!: string[];
 }

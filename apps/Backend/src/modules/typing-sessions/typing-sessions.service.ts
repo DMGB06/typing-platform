@@ -1,244 +1,366 @@
 import {
-  Injectable,
-  NotFoundException,
+  ConflictException,
   ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { createHash } from 'node:crypto';
 import { PrismaService } from '../../Prisma/prisma.service';
-import { TypingSession } from '@prisma/client';
-import { CreateTypingSessionDto } from './dto/typing.dto';
+import { paginated, PaginationDto } from '../../common/pagination.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { activeText } from '../text/text-visibility';
+import {
+  CreateTypingSessionDto,
+  StartTypingSessionDto,
+} from './dto/typing.dto';
+import { replayTyping } from './typing-result';
+
+const sessionSelect = {
+  id: true,
+  userId: true,
+  textId: true,
+  wpm: true,
+  accuracy: true,
+  timeSeconds: true,
+  errorRate: true,
+  improvementRate: true,
+  createdAt: true,
+} satisfies Prisma.TypingSessionSelect;
+
+const newestFirst = [
+  { createdAt: 'desc' },
+  { id: 'desc' },
+] satisfies Prisma.TypingSessionOrderByWithRelationInput[];
+
+const attemptLifetimeMs = 30 * 60 * 1000;
+const maxRetries = 3;
+
+function hash(value: string) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function nextAverage(average: number, count: number, value: number) {
+  return average + (value - average) / (count + 1);
+}
 
 @Injectable()
 export class TypingSessionsService {
+  private readonly logger = new Logger(TypingSessionsService.name);
+
   constructor(
-    private prisma: PrismaService,
-    private notificationsService: NotificationsService,
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
-  // ============================================================
-  // PÚBLICOS
-  // ============================================================
-
-  /** 1. Guarda una sesión completa y actualiza todas las estadísticas */
-  async create(
-    userId: number,
-    dto: CreateTypingSessionDto,
-  ): Promise<TypingSession> {
-    const text = await this.prisma.text.findFirst({
-      where: { id: dto.textId, isActive: true },
+  async start(userId: number, { textId }: StartTypingSessionDto) {
+    const text = await this.prisma.text.findUnique({
+      where: { id: textId, ...activeText },
+      select: { content: true, difficultyId: true },
     });
-    if (!text) throw new NotFoundException(`Texto ${dto.textId} no encontrado`);
+    if (!text) throw new NotFoundException('Texto no encontrado');
 
-    const improvementRate = await this.calculateImprovement(
-      userId,
-      dto.textId,
-      dto.wpm,
-    );
-
-    const session = await this.prisma.typingSession.create({
+    const startedAt = new Date();
+    const expiresAt = new Date(startedAt.getTime() + attemptLifetimeMs);
+    const { id } = await this.prisma.typingAttempt.create({
       data: {
         userId,
-        textId: dto.textId,
-        wpm: dto.wpm ?? null,
-        accuracy: dto.accuracy ?? null,
-        timeSeconds: dto.timeSeconds ?? null,
-        errorRate: dto.errorRate ?? null,
-        improvementRate,
+        textId,
+        difficultyId: text.difficultyId,
+        contentHash: hash(text.content),
+        startedAt,
+        expiresAt,
       },
+      select: { id: true },
     });
-
-    await Promise.all([
-      this.saveErrors(session.id, dto),
-      this.updateTextHistory(userId, dto),
-      this.updateStats(userId, text.difficultyId, dto),
-    ]);
-
-    return session;
+    return { attemptId: id, startedAt, expiresAt };
   }
 
-  /** 2. Sesiones recientes del usuario */
-  async findMyRecent(userId: number, limit = 20): Promise<TypingSession[]> {
-    return this.prisma.typingSession.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
-  }
+  async create(userId: number, { attemptId, events }: CreateTypingSessionDto) {
+    const finishedAt = new Date();
+    const eventsHash = hash(JSON.stringify(events));
 
-  /** 3. Sesiones del usuario en un texto específico */
-  async findByText(textId: number, userId: number): Promise<TypingSession[]> {
-    const text = await this.prisma.text.findUnique({ where: { id: textId } });
-    if (!text) throw new NotFoundException(`Texto ${textId} no encontrado`);
-
-    return this.prisma.typingSession.findMany({
-      where: { userId, textId },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  /** 4. Sesión por id (solo el dueño puede verla) */
-  async findById(
-    userId: number,
-    id: number,
-  ): Promise<TypingSession & { errors: any[] }> {
-    const session = await this.prisma.typingSession.findUnique({
-      where: { id },
-      include: { errors: true },
-    });
-    if (!session) throw new NotFoundException(`Sesión ${id} no encontrada`);
-    if (session.userId !== userId)
-      throw new ForbiddenException('No tienes acceso a esta sesión');
-    return session;
-  }
-
-  // ============================================================
-  // PRIVADOS
-  // ============================================================
-
-  /** Calcula el % de mejora respecto al mejor WPM previo en ese texto */
-  private async calculateImprovement(
-    userId: number,
-    textId: number,
-    wpm?: number,
-  ): Promise<number | null> {
-    if (!wpm) return null;
-
-    const best = await this.prisma.typingSession.findFirst({
-      where: { userId, textId, wpm: { not: null } },
-      orderBy: { wpm: 'desc' },
-      select: { wpm: true },
-    });
-
-    if (!best?.wpm) return null;
-    return ((wpm - best.wpm) / best.wpm) * 100;
-  }
-
-  /** Guarda los errores individuales de la sesión */
-  private async saveErrors(
-    sessionId: number,
-    dto: CreateTypingSessionDto,
-  ): Promise<void> {
-    if (!dto.errors?.length) return;
-
-    await this.prisma.typingError.createMany({
-      data: dto.errors.map((e) => ({
-        sessionId,
-        wrongWord: e.wrongWord ?? null,
-        correctWord: e.correctWord ?? null,
-        position: e.position ?? null,
-      })),
-    });
-  }
-
-  /** Actualiza user_stats_by_difficulty recalculando promedios y máximos */
-  private async updateStats(
-    userId: number,
-    difficultyId: number,
-    dto: CreateTypingSessionDto,
-  ): Promise<void> {
-    const existing = await this.prisma.userStatsByDifficulty.findUnique({
-      where: { userId_difficultyId: { userId, difficultyId } },
-    });
-
-    if (!existing) {
-      await this.prisma.userStatsByDifficulty.create({
-        data: {
-          userId,
-          difficultyId,
-          bestWpm: dto.wpm ?? 0,
-          avgWpm: dto.wpm ?? 0,
-          avgAccuracy: dto.accuracy ?? 0,
-          totalSessions: 1,
-          totalTimeSeconds: dto.timeSeconds ?? 0,
-          avgErrorRate: dto.errorRate ?? 0,
-        },
-      });
-      return;
-    }
-
-    const n = existing.totalSessions; // sesiones anteriores
-    const newCount = n + 1;
-
-    const newAvgWpm = dto.wpm
-      ? (existing.avgWpm * n + dto.wpm) / newCount
-      : existing.avgWpm;
-
-    const newAvgAccuracy = dto.accuracy
-      ? (existing.avgAccuracy * n + dto.accuracy) / newCount
-      : existing.avgAccuracy;
-
-    const newAvgErrorRate =
-      dto.errorRate !== undefined && dto.errorRate !== null
-        ? (existing.avgErrorRate * n + dto.errorRate) / newCount
-        : existing.avgErrorRate;
-
-    const isNewPersonalBest = !!(dto.wpm && dto.wpm > existing.bestWpm);
-
-    await this.prisma.userStatsByDifficulty.update({
-      where: { userId_difficultyId: { userId, difficultyId } },
-      data: {
-        totalSessions: { increment: 1 },
-        totalTimeSeconds: { increment: dto.timeSeconds ?? 0 },
-        bestWpm: isNewPersonalBest ? dto.wpm! : existing.bestWpm,
-        avgWpm: newAvgWpm,
-        avgAccuracy: newAvgAccuracy,
-        avgErrorRate: newAvgErrorRate,
-      },
-    });
-
-    if (isNewPersonalBest) {
+    for (let retry = 0; ; retry++) {
       try {
-        await this.notificationsService.createPersonalBestNotification(
-          userId,
-          difficultyId,
-          dto.wpm!,
-        );
-      } catch (err) {
-        console.error(
-          'No se pudo crear la notificación de récord personal:',
-          err,
+        const { session, personalBestDifficultyId } =
+          await this.prisma.$transaction(
+            (tx) =>
+              this.finalize(
+                tx,
+                userId,
+                attemptId,
+                events,
+                eventsHash,
+                finishedAt,
+              ),
+            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+          );
+
+        if (personalBestDifficultyId !== null && session.wpm !== null) {
+          try {
+            await this.notificationsService.createPersonalBestNotification(
+              userId,
+              personalBestDifficultyId,
+              session.wpm,
+            );
+          } catch (error) {
+            this.logger.error(
+              `Falló la notificación para la sesión ${session.id}`,
+              error,
+            );
+          }
+        }
+        return session;
+      } catch (error) {
+        if (
+          !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+          !(
+            ['P2034', 'P2002'].includes(error.code) ||
+            (error.code === 'P2010' &&
+              (error.meta?.code === '40001' || error.meta?.code === '40P01'))
+          )
+        ) {
+          throw error;
+        }
+
+        if (retry === maxRetries) {
+          this.logger.warn(
+            `Conflictos agotados al finalizar el intento ${attemptId}`,
+          );
+          throw new ServiceUnavailableException(
+            'Reintenta guardar el resultado',
+          );
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, 10 * 2 ** retry + Math.random() * 10),
         );
       }
     }
   }
 
-  /** Actualiza el historial de textos practicados por el usuario */
-  private async updateTextHistory(
+  private async finalize(
+    tx: Prisma.TransactionClient,
     userId: number,
-    dto: CreateTypingSessionDto,
-  ): Promise<void> {
-    const existing = await this.prisma.userTextHistory.findUnique({
-      where: { userId_textId: { userId, textId: dto.textId } },
+    attemptId: string,
+    events: string[],
+    eventsHash: string,
+    finishedAt: Date,
+  ) {
+    const attempt = await tx.typingAttempt.findUnique({
+      where: { id: attemptId },
+      include: { session: { select: sessionSelect } },
     });
-
-    if (!existing) {
-      await this.prisma.userTextHistory.create({
-        data: {
-          userId,
-          textId: dto.textId,
-          lastAttemptAt: new Date(),
-          totalAttempts: 1,
-          bestWpm: dto.wpm ?? null,
-          bestAccuracy: dto.accuracy ?? null,
-        },
-      });
-      return;
+    if (!attempt || attempt.userId !== userId) {
+      throw new NotFoundException('Intento no encontrado');
+    }
+    if (attempt.session) {
+      if (attempt.eventsHash !== eventsHash) {
+        throw new ConflictException(
+          'El intento ya se guardó con otros eventos',
+        );
+      }
+      return { session: attempt.session, personalBestDifficultyId: null };
+    }
+    if (finishedAt >= attempt.expiresAt) {
+      throw new ConflictException('El intento venció');
     }
 
-    await this.prisma.userTextHistory.update({
-      where: { userId_textId: { userId, textId: dto.textId } },
+    const { textId, difficultyId } = attempt;
+    // Keep this revision active and stable until the session commits.
+    const [text] = await tx.$queryRaw<{ content: string }[]>`
+      SELECT content FROM texts
+      WHERE id = ${textId} AND is_active = ${activeText.isActive}
+      FOR SHARE
+    `;
+    if (!text) throw new NotFoundException('Texto no encontrado');
+    if (hash(text.content) !== attempt.contentHash) {
+      throw new ConflictException('El contenido del texto cambió');
+    }
+
+    const { errors, ...metrics } = replayTyping(
+      text.content,
+      events,
+      finishedAt.getTime() - attempt.startedAt.getTime(),
+    );
+    const verified = { userId, attemptId: { not: null } };
+    const [textBest, difficultyBest] = await Promise.all([
+      tx.typingSession.aggregate({
+        where: { ...verified, textId },
+        _max: { wpm: true },
+      }),
+      tx.typingSession.aggregate({
+        where: { ...verified, attempt: { difficultyId } },
+        _max: { wpm: true },
+      }),
+    ]);
+
+    const previousWpm = textBest._max.wpm;
+    const session = await tx.typingSession.create({
       data: {
-        lastAttemptAt: new Date(),
+        userId,
+        textId,
+        attemptId,
+        ...metrics,
+        improvementRate: previousWpm
+          ? ((metrics.wpm - previousWpm) / previousWpm) * 100
+          : null,
+        errors: errors.length ? { createMany: { data: errors } } : undefined,
+      },
+      select: sessionSelect,
+    });
+    await tx.typingAttempt.update({
+      where: { id: attemptId },
+      data: { eventsHash },
+    });
+    await this.updateTextHistory(
+      tx,
+      userId,
+      textId,
+      session.createdAt,
+      metrics,
+    );
+    await this.updateStats(tx, userId, difficultyId, metrics);
+    const previousBest = difficultyBest._max.wpm;
+    return {
+      session,
+      personalBestDifficultyId:
+        previousBest !== null && metrics.wpm > previousBest
+          ? difficultyId
+          : null,
+    };
+  }
+
+  private async updateTextHistory(
+    tx: Prisma.TransactionClient,
+    userId: number,
+    textId: number,
+    createdAt: Date,
+    { wpm, accuracy }: Omit<ReturnType<typeof replayTyping>, 'errors'>,
+  ) {
+    const where = { userId_textId: { userId, textId } };
+    const existing = await tx.userTextHistory.findUnique({ where });
+    await tx.userTextHistory.upsert({
+      where,
+      create: {
+        userId,
+        textId,
+        lastAttemptAt: createdAt,
+        bestWpm: wpm,
+        bestAccuracy: accuracy,
+      },
+      update: {
         totalAttempts: { increment: 1 },
-        bestWpm:
-          dto.wpm && dto.wpm > (existing.bestWpm ?? 0)
-            ? dto.wpm
-            : existing.bestWpm,
-        bestAccuracy:
-          dto.accuracy && dto.accuracy > (existing.bestAccuracy ?? 0)
-            ? dto.accuracy
-            : existing.bestAccuracy,
+        lastAttemptAt:
+          existing && existing.lastAttemptAt > createdAt
+            ? existing.lastAttemptAt
+            : createdAt,
+        bestWpm: Math.max(existing?.bestWpm ?? wpm, wpm),
+        bestAccuracy: Math.max(existing?.bestAccuracy ?? accuracy, accuracy),
       },
     });
+  }
+
+  private async updateStats(
+    tx: Prisma.TransactionClient,
+    userId: number,
+    difficultyId: number,
+    {
+      wpm,
+      accuracy,
+      errorRate,
+      timeSeconds,
+    }: Omit<ReturnType<typeof replayTyping>, 'errors'>,
+  ) {
+    const where = { userId_difficultyId: { userId, difficultyId } };
+    const existing = await tx.userStatsByDifficulty.findUnique({ where });
+    await tx.userStatsByDifficulty.upsert({
+      where,
+      create: {
+        userId,
+        difficultyId,
+        bestWpm: wpm,
+        avgWpm: wpm,
+        avgAccuracy: accuracy,
+        avgErrorRate: errorRate,
+        totalSessions: 1,
+        totalTimeSeconds: timeSeconds,
+        wpmCount: 1,
+        accuracyCount: 1,
+        errorRateCount: 1,
+      },
+      update: {
+        bestWpm: Math.max(existing?.bestWpm ?? wpm, wpm),
+        avgWpm: nextAverage(
+          existing?.avgWpm ?? 0,
+          existing?.wpmCount ?? 0,
+          wpm,
+        ),
+        avgAccuracy: nextAverage(
+          existing?.avgAccuracy ?? 0,
+          existing?.accuracyCount ?? 0,
+          accuracy,
+        ),
+        avgErrorRate: nextAverage(
+          existing?.avgErrorRate ?? 0,
+          existing?.errorRateCount ?? 0,
+          errorRate,
+        ),
+        totalSessions: { increment: 1 },
+        totalTimeSeconds: { increment: timeSeconds },
+        wpmCount: { increment: 1 },
+        accuracyCount: { increment: 1 },
+        errorRateCount: { increment: 1 },
+      },
+    });
+  }
+
+  findMyRecent(userId: number, limit = 20) {
+    return this.prisma.typingSession.findMany({
+      where: { userId },
+      orderBy: newestFirst,
+      take: limit,
+      select: sessionSelect,
+    });
+  }
+
+  async findByText(textId: number, userId: number, pagination: PaginationDto) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const text = await tx.text.findUnique({
+          where: { id: textId },
+          select: { id: true },
+        });
+        if (!text) throw new NotFoundException(`Texto ${textId} no encontrado`);
+
+        const where = { userId, textId };
+        const total = await tx.typingSession.count({ where });
+        const { page, limit } = pagination;
+        const data =
+          page <= Math.ceil(total / limit)
+            ? await tx.typingSession.findMany({
+                where,
+                orderBy: newestFirst,
+                skip: (page - 1) * limit,
+                take: limit,
+                select: sessionSelect,
+              })
+            : [];
+        return paginated(data, pagination, total);
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
+  }
+
+  async findById(userId: number, id: number) {
+    const session = await this.prisma.typingSession.findUnique({
+      where: { id },
+      select: { ...sessionSelect, errors: true },
+    });
+    if (!session) throw new NotFoundException(`Sesión ${id} no encontrada`);
+    if (session.userId !== userId)
+      throw new ForbiddenException('No tienes acceso a esta sesión');
+    return session;
   }
 }

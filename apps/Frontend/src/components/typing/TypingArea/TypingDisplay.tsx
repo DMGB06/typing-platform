@@ -1,12 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { FiRotateCcw } from 'react-icons/fi';
-import type { TypingDisplayProps, Text } from '@/types';
+import type { TypingDisplayProps, Text, CreateTypingSessionRequest } from '@/types';
 import { getRandomText } from '@/lib/api/texts';
-import { createTypingSession } from '@/lib/api/typing-sessions';
+import { ApiError } from '@/lib/api/client';
+import { createTypingSession, startTypingSession } from '@/lib/api/typing-sessions';
 import { useAuth } from '@/hooks/useAuth';
+
+function measureTyping(input: string[], target: string[], startTime: number) {
+  const elapsed = Math.max(1, (Date.now() - startTime) / 1000);
+  const correct = input.filter((char, index) => char === target[index]).length;
+  return {
+    wpm: Math.round((correct / 5) * (60 / elapsed)),
+    timeSeconds: Math.ceil(elapsed),
+  };
+}
 
 /**
  * Componente TypingDisplay - Display del texto y estadísticas
@@ -25,13 +35,10 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
   const { isLoggedIn } = useAuth();
 
   // Estado del texto y tipeo
-  const [text, setText] = useState('');
   const [textData, setTextData] = useState<Text | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userInput, setUserInput] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [errors, setErrors] = useState(0);
+  const [userInput, setUserInput] = useState<string[]>([]);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [wpm, setWpm] = useState(0);
   const [accuracy, setAccuracy] = useState(100);
@@ -39,153 +46,191 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showLoginHint, setShowLoginHint] = useState(false);
 
-  // Obtener texto basado en filtros desde la API
+  const [starting, setStarting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [retry, setRetry] = useState<CreateTypingSessionRequest | null>(null);
+  const area = useRef<HTMLDivElement>(null);
+  const generation = useRef(0);
+  const busy = useRef(false);
+  const input = useRef<string[]>([]);
+  const events = useRef<string[]>([]);
+  const attemptId = useRef<string | null>(null);
+  const insertions = useRef(0);
+  const correctInsertions = useRef(0);
+  const target = useMemo(
+    () => Array.from(textData?.content.replace(/\r\n?/g, '\n') ?? ''),
+    [textData],
+  );
+  const { typeId, difficultyId, languageId } = filters;
+
   useEffect(() => {
-    // No hacer fetch hasta que los filtros tengan IDs válidos (catálogos cargados)
-    if (!filters.typeId && !filters.difficultyId && !filters.languageId) return;
+    if (!typeId && !difficultyId && !languageId) return;
+    let cancelled = false;
 
     const fetchText = async () => {
       setLoading(true);
-      setError(null);
-
       try {
         const randomText = await getRandomText({
-          difficultyId: filters.difficultyId ?? undefined,
-          typeId: filters.typeId ?? undefined,
-          languageId: filters.languageId ?? undefined,
+          difficultyId: difficultyId ?? undefined,
+          typeId: typeId ?? undefined,
+          languageId: languageId ?? undefined,
         });
+        if (cancelled) return;
         setTextData(randomText);
-        setText(randomText.content);
-      } catch (err) {
-        console.error('Error fetching text:', err);
-        setError('No se encontró un texto con esos filtros. Intenta con otra combinación.');
-        setText('');
+      } catch {
+        if (!cancelled) setError('Sin resultados para esta combinaci\u00f3n.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    fetchText();
-
-    // Reset estados
-    setUserInput('');
-    setCurrentIndex(0);
-    setErrors(0);
-    setWpm(0);
-    setAccuracy(100);
-    setTimeSeconds(0);
-    setStartTime(null);
-    setSaveError(null);
-    setShowLoginHint(false);
-  }, [filters]);
+    void fetchText();
+    const invalidate = () => { generation.current++; };
+    return () => {
+      cancelled = true;
+      invalidate();
+    };
+  }, [typeId, difficultyId, languageId]);
 
   // Timer
   useEffect(() => {
     if (!isStarted || !startTime) return;
 
     const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      setTimeSeconds(elapsed);
-
-      // Calcular WPM
-      const words = userInput.trim().split(' ').length;
-      const minutes = elapsed / 60;
-      if (minutes > 0) {
-        setWpm(Math.round(words / minutes));
-      }
+      const metrics = measureTyping(input.current, target, startTime);
+      setWpm(metrics.wpm);
+      setTimeSeconds(metrics.timeSeconds);
     }, 100);
 
     return () => clearInterval(interval);
-  }, [isStarted, startTime, userInput]);
+  }, [isStarted, startTime, target]);
 
-  // Calcula las estadísticas finales en el instante exacto en que se termina
-  // de escribir (no reusa wpm/timeSeconds del setInterval, que se actualiza
-  // cada 100ms y puede estar levemente desactualizado en el último tecleo).
-  const handleComplete = async (finalInput: string, finalErrorsCount: number) => {
-    if (!textData || !startTime) return;
-
-    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-    const words = finalInput.trim().split(' ').length;
-    const minutes = elapsedSeconds / 60;
-    const finalWpm = minutes > 0 ? Math.round(words / minutes) : 0;
-    const finalAccuracy = Math.max(
-      0,
-      Math.round(((finalInput.length - finalErrorsCount) / finalInput.length) * 100),
-    );
-    const finalErrorRate = Math.min(
-      100,
-      Math.round((finalErrorsCount / finalInput.length) * 100),
-    );
-
-    if (!isLoggedIn) {
-      setShowLoginHint(true);
-      return;
-    }
-
+  const begin = async () => {
+    if (!textData || !target.length || busy.current || isStarted || finished) return;
+    const version = generation.current;
+    busy.current = true;
+    setStarting(true);
+    setSaveError(null);
     try {
-      setSaveError(null);
-      await createTypingSession({
-        textId: textData.id,
-        // wpm y timeSeconds exigen @IsPositive() en el backend: si se
-        // completó en menos de un segundo, se omiten en vez de mandar 0.
-        ...(finalWpm > 0 ? { wpm: finalWpm } : {}),
-        accuracy: finalAccuracy,
-        ...(elapsedSeconds > 0 ? { timeSeconds: elapsedSeconds } : {}),
-        errorRate: finalErrorRate,
-      });
-    } catch (err) {
-      console.error('Error al guardar la sesión:', err);
-      setSaveError('No se pudo guardar tu resultado.');
+      const attempt = isLoggedIn ? await startTypingSession(textData.id) : null;
+      if (version !== generation.current) return;
+      attemptId.current = attempt?.attemptId ?? null;
+      setStartTime(Date.now());
+      onStart();
+      area.current?.focus();
+    } catch {
+      if (version === generation.current) {
+        setSaveError('No se pudo iniciar el intento. Vuelve a intentarlo.');
+      }
+    } finally {
+      if (version === generation.current) {
+        busy.current = false;
+        setStarting(false);
+      }
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (!isStarted) {
-      onStart();
-      setStartTime(Date.now());
+  const save = async (request: CreateTypingSessionRequest) => {
+    if (busy.current) return;
+    const version = generation.current;
+    busy.current = true;
+    setSaveError(null);
+    setRetry(null);
+    setSaving(true);
+    try {
+      const result = await createTypingSession(request);
+      if (version !== generation.current) return;
+      setWpm(result.wpm ?? 0);
+      setAccuracy(result.accuracy ?? 0);
+      setTimeSeconds(result.timeSeconds ?? 0);
+      setSaved(true);
+    } catch (error) {
+      if (version !== generation.current) return;
+      const transient = !(error instanceof ApiError) || error.status >= 500 || error.status === 429;
+      if (transient) setRetry(request);
+      setSaveError(transient ? 'No se pudo guardar tu resultado.' : error.message);
+    } finally {
+      if (version === generation.current) {
+        busy.current = false;
+        setSaving(false);
+      }
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget || e.ctrlKey || e.altKey || e.metaKey || e.nativeEvent.isComposing) return;
+    if (loading || !textData || finished || input.current.length === target.length) return;
+
+    const expected = target[input.current.length];
+    const key = e.key === 'Enter' && expected === '\n' ? '\n'
+      : e.key === 'Tab' && expected === '\t' && !e.shiftKey ? '\t'
+      : e.key;
+    if (key !== 'Backspace' && !/^(?:[\t\n]|[^\p{Cc}\p{Cs}])$(?![\s\S])/u.test(key)) return;
+    e.preventDefault();
+    if (!isStarted || startTime === null) {
+      if (key !== 'Backspace') void begin();
+      return;
+    }
+    if (key === 'Backspace' && input.current.length === 0) return;
+    if (attemptId.current && events.current.length >= target.length * 10) {
+      setFinished(true);
+      setSaveError('Se alcanz\u00f3 el l\u00edmite de eventos. Reinicia el intento.');
+      onReset();
+      return;
     }
 
-    // Lógica de tecleo (simplificada)
-    if (e.key === 'Backspace') {
-      e.preventDefault();
-      setUserInput(prev => prev.slice(0, -1));
-      setCurrentIndex(prev => Math.max(0, prev - 1));
-    } else if (e.key.length === 1) {
-      e.preventDefault(); // evita que la barra espaciadora scrollee la página
-      const newInput = userInput + e.key;
-      setUserInput(newInput);
-      setCurrentIndex(newInput.length);
+    if (attemptId.current) events.current.push(key);
+    if (key === 'Backspace') {
+      input.current.pop();
+    } else {
+      input.current.push(key);
+      insertions.current++;
+      if (key === expected) correctInsertions.current++;
+    }
+    setUserInput([...input.current]);
 
-      // Verificar errores
-      const isError = text[newInput.length - 1] !== e.key;
-      if (isError) {
-        setErrors(prev => prev + 1);
-      }
+    const isComplete = input.current.length === target.length;
+    if (!isComplete || !attemptId.current) {
+      const metrics = measureTyping(input.current, target, startTime);
+      setWpm(metrics.wpm);
+      setAccuracy((correctInsertions.current / insertions.current) * 100);
+      setTimeSeconds(metrics.timeSeconds);
+    }
+    if (!isComplete) return;
 
-      // Calcular accuracy
-      const acc = ((newInput.length - errors) / newInput.length) * 100;
-      setAccuracy(Math.max(0, Math.round(acc)));
-
-      // Verificar si terminó
-      if (newInput.length === text.length) {
-        const finalErrorsCount = isError ? errors + 1 : errors;
-        void handleComplete(newInput, finalErrorsCount);
-        onReset();
-      }
+    setFinished(true);
+    onReset();
+    if (attemptId.current) {
+      void save({ attemptId: attemptId.current, events: [...events.current] });
+    } else {
+      setShowLoginHint(true);
     }
   };
 
   const handleRestart = () => {
-    setUserInput('');
-    setCurrentIndex(0);
-    setErrors(0);
+    generation.current++;
+    busy.current = false;
+    input.current = [];
+    events.current = [];
+    attemptId.current = null;
+    insertions.current = 0;
+    correctInsertions.current = 0;
+    setUserInput([]);
     setWpm(0);
     setAccuracy(100);
     setTimeSeconds(0);
     setStartTime(null);
     setSaveError(null);
+    setRetry(null);
     setShowLoginHint(false);
+    setStarting(false);
+    setSaving(false);
+    setSaved(false);
+    setFinished(false);
     onReset();
+    area.current?.focus();
   };
 
   return (
@@ -195,6 +240,7 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
       <div
         className="rounded-xl p-8 relative focus-within:ring-2 focus-within:ring-(--color-accent) transition-all duration-300"
         style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+        ref={area}
         tabIndex={loading ? -1 : 0}
         onKeyDown={handleKeyPress}
       >
@@ -269,24 +315,24 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
         {/* Text Display */}
         {!loading && !error && (
           <>
-            {/* Instrucción */}
-            {!isStarted && (
+            {!isStarted && !finished && !starting && textData && (
               <div className="text-center mb-6">
-                <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
-                  Click here or press any key to start
-                </p>
+                <button type="button" onClick={() => void begin()} className="underline">
+                  Iniciar
+                </button>
               </div>
             )}
+            {starting && <p role="status" className="text-center mb-6">Iniciando...</p>}
 
             {/* Texto */}
             <div className="typing-text text-center">
-              {text.split('').map((char, index) => {
+              {target.map((char, index) => {
                 let charClass = 'char-pending';
 
                 if (index < userInput.length) {
                   // Ya fue escrito
                   charClass = userInput[index] === char ? 'char-correct' : 'char-incorrect';
-                } else if (index === currentIndex) {
+                } else if (index === userInput.length) {
                   // Carácter actual — clase con el pulso animado del cursor
                   charClass = 'char-current';
                 }
@@ -300,13 +346,13 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
             </div>
 
             {/* Botón Restart */}
-            {isStarted && (
+            {(isStarted || starting || finished) && (
               <div className="absolute top-4 right-4">
                 <button
                   onClick={handleRestart}
                   className="flex items-center gap-1.5 text-sm transition-colors duration-200 hover:opacity-70"
                   style={{ color: 'var(--color-text-tertiary)' }}
-                  title="Restart (Ctrl + R)"
+                  title="Reiniciar intento"
                 >
                   <FiRotateCcw className="w-3.5 h-3.5" />
                   restart
@@ -330,7 +376,7 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
 
         <div className="text-center">
           <div className="text-4xl font-bold" style={{ color: 'var(--color-success)' }}>
-            {accuracy}%
+            {Number(accuracy.toFixed(2))}%
           </div>
           <div className="text-sm mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
             Accuracy
@@ -356,10 +402,17 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
           para guardar tu progreso.
         </p>
       )}
+      {saving && <p role="status" className="text-center text-sm">Guardando resultado...</p>}
+      {saved && <p role="status" className="text-center text-sm">Resultado guardado.</p>}
       {saveError && (
-        <p className="text-center text-sm" style={{ color: 'var(--color-error)' }}>
-          {saveError}
-        </p>
+        <div className="text-center text-sm" style={{ color: 'var(--color-error)' }}>
+          <p role="alert">{saveError}</p>
+          {retry && (
+            <button type="button" className="underline" onClick={() => void save(retry)}>
+              Reintentar guardado
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
