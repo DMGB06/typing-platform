@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Header,
   Param,
   Query,
   Body,
@@ -23,11 +24,13 @@ export class TypingSessionsController {
   constructor(private readonly typingSessionsService: TypingSessionsService) {}
 
   @Post('start')
+  @Header('Cache-Control', 'private, no-store')
   start(@CurrentUser('id') userId: number, @Body() dto: StartTypingSessionDto) {
     return this.typingSessionsService.start(userId, dto);
   }
 
   @Post()
+  @Header('Cache-Control', 'private, no-store')
   create(
     @CurrentUser('id') userId: number,
     @Body() dto: CreateTypingSessionDto,
@@ -37,12 +40,14 @@ export class TypingSessionsController {
 
   // GET /typing-sessions
   @Get()
+  @Header('Cache-Control', 'private, no-store')
   getMySessions(@CurrentUser('id') userId: number) {
     return this.typingSessionsService.findMyRecent(userId);
   }
 
   // GET /typing-sessions/text/:textId  ← debe ir ANTES de /:id para no colisionar
   @Get('text/:textId')
+  @Header('Cache-Control', 'private, no-store')
   getByText(
     @CurrentUser('id') userId: number,
     @Param('textId', ParseIntPipe) textId: number,
@@ -53,6 +58,7 @@ export class TypingSessionsController {
 
   // GET /typing-sessions/:id
   @Get(':id')
+  @Header('Cache-Control', 'private, no-store')
   getOne(
     @CurrentUser('id') userId: number,
     @Param('id', ParseIntPipe) id: number,

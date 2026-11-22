@@ -4,6 +4,7 @@ import { PrismaService } from '../../Prisma/prisma.service';
 import { TextPaginationDto } from './dto/text.dto';
 import { TextFilterDto } from './dto/text-filter.dto';
 import { activeText } from './text-visibility';
+import { sha256 } from '../../common/sha256';
 
 @Injectable()
 export class TextService {
@@ -103,7 +104,7 @@ export class TextService {
     });
 
     if (!randomText[0]) throw new NotFoundException('No se encontraron textos');
-    return randomText[0];
+    return { ...randomText[0], contentHash: sha256(randomText[0].content) };
   }
 
   async getTextById(id: number) {

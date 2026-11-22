@@ -7,7 +7,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { createHash } from 'node:crypto';
+import { sha256 } from '../../common/sha256';
 import { PrismaService } from '../../Prisma/prisma.service';
 import { paginated, PaginationDto } from '../../common/pagination.dto';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -38,10 +38,6 @@ const newestFirst = [
 const attemptLifetimeMs = 30 * 60 * 1000;
 const maxRetries = 3;
 
-function hash(value: string) {
-  return createHash('sha256').update(value).digest('hex');
-}
-
 function nextAverage(average: number, count: number, value: number) {
   return average + (value - average) / (count + 1);
 }
@@ -55,12 +51,23 @@ export class TypingSessionsService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async start(userId: number, { textId }: StartTypingSessionDto) {
+  async start(
+    userId: number,
+    { textId, expectedContentHash }: StartTypingSessionDto,
+  ) {
     const text = await this.prisma.text.findUnique({
       where: { id: textId, ...activeText },
       select: { content: true, difficultyId: true },
     });
     if (!text) throw new NotFoundException('Texto no encontrado');
+
+    const contentHash = sha256(text.content);
+    if (
+      expectedContentHash !== undefined &&
+      expectedContentHash !== contentHash
+    ) {
+      throw new ConflictException('El contenido del texto cambi\u00f3');
+    }
 
     const startedAt = new Date();
     const expiresAt = new Date(startedAt.getTime() + attemptLifetimeMs);
@@ -69,7 +76,7 @@ export class TypingSessionsService {
         userId,
         textId,
         difficultyId: text.difficultyId,
-        contentHash: hash(text.content),
+        contentHash,
         startedAt,
         expiresAt,
       },
@@ -80,7 +87,7 @@ export class TypingSessionsService {
 
   async create(userId: number, { attemptId, events }: CreateTypingSessionDto) {
     const finishedAt = new Date();
-    const eventsHash = hash(JSON.stringify(events));
+    const eventsHash = sha256(JSON.stringify(events));
 
     for (let retry = 0; ; retry++) {
       try {
@@ -175,7 +182,7 @@ export class TypingSessionsService {
       FOR SHARE
     `;
     if (!text) throw new NotFoundException('Texto no encontrado');
-    if (hash(text.content) !== attempt.contentHash) {
+    if (sha256(text.content) !== attempt.contentHash) {
       throw new ConflictException('El contenido del texto cambió');
     }
 

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { sha256 } from '../../common/sha256';
 import { TextService } from './text.service';
 import { PrismaService } from '../../Prisma/prisma.service';
 import { TextPaginationDto } from './dto/text.dto';
@@ -132,7 +133,7 @@ describe('TextService', () => {
 
       const result = await service.getRandomText({});
 
-      expect(result).toEqual(text);
+      expect(result).toEqual({ ...text, contentHash: sha256(text.content) });
       expect(mockPrisma.text.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ take: 1 }),
       );

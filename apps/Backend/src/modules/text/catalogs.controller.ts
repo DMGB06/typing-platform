@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from '../../Prisma/prisma.service';
+import { getDifficulties, getLanguages, getTextTypes } from './public-catalogs';
 
 /**
  * Controlador público de catálogos.
@@ -18,28 +19,16 @@ export class CatalogsController {
 
   @Get('difficulties')
   async getDifficulties() {
-    return this.prisma.difficulty.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true, description: true, orderIndex: true },
-      orderBy: { orderIndex: 'asc' },
-    });
+    return getDifficulties(this.prisma);
   }
 
   @Get('text-types')
   async getTextTypes() {
-    return this.prisma.textType.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true, description: true },
-      orderBy: { id: 'asc' },
-    });
+    return getTextTypes(this.prisma);
   }
 
   @Get('languages')
   async getLanguages() {
-    return this.prisma.language.findMany({
-      where: { isActive: true },
-      select: { id: true, code: true, name: true },
-      orderBy: { id: 'asc' },
-    });
+    return getLanguages(this.prisma);
   }
 }

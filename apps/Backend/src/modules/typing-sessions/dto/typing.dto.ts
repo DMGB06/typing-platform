@@ -5,6 +5,7 @@ import {
   IsUUID,
   Matches,
   Max,
+  ValidateIf,
   Min,
 } from 'class-validator';
 
@@ -16,6 +17,10 @@ export class StartTypingSessionDto {
   @Min(1)
   @Max(2147483647)
   textId!: number;
+
+  @ValidateIf((_: unknown, value: unknown) => value !== undefined)
+  @Matches(/^[a-f0-9]{64}$(?![\s\S])/)
+  expectedContentHash?: string;
 }
 
 export class CreateTypingSessionDto {

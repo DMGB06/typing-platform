@@ -8,6 +8,7 @@ import {
   Post,
   ForbiddenException,
   Get,
+  Header,
   Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -119,6 +120,7 @@ export class UsersController {
 
   // Obtener las preferencias propias (dificultad por defecto)
   @Get('me/preferences')
+  @Header('Cache-Control', 'private, no-store')
   @UseGuards(JwtAuthGuard) // Solo usuarios autenticados
   async getMyPreferences(@Req() req: Request) {
     const currentUser = req.user as CurrentUser;
