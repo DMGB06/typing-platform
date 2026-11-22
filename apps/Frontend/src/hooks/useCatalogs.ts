@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Catalogs } from "@/types";
+import { getCachedPracticeCatalogs } from "@/lib/api/practice";
 import { getDifficulties, getTextTypes, getLanguages } from "@/lib/api/texts";
 
 /**
@@ -27,6 +28,11 @@ export function useCatalogs() {
 
     async function fetchCatalogs() {
       try {
+        const cached = getCachedPracticeCatalogs();
+        if (cached) {
+          setCatalogs(cached);
+          return;
+        }
         const [difficulties, textTypes, languages] = await Promise.all([
           getDifficulties(),
           getTextTypes(),

@@ -12,10 +12,10 @@ import type {
 } from "@/types";
 import { apiClient } from "./client";
 
-export function startTypingSession(textId: number) {
+export function startTypingSession(textId: number, expectedContentHash: string) {
   return apiClient<{ attemptId: string; startedAt: string; expiresAt: string }>(
     "/typing-sessions/start",
-    { method: "POST", body: { textId } },
+    { method: "POST", body: { textId, expectedContentHash } },
   );
 }
 

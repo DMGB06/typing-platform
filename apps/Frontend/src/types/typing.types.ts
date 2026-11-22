@@ -2,7 +2,7 @@
  * Tipos del módulo de Typing - Estado y Props de componentes
  */
 
-import type { Difficulty, TextType, Language } from './api.types';
+import type { Difficulty, TextType, Language, Text } from './api.types';
 
 // ── Estado de filtros (almacena IDs numéricos que coinciden con la BD) ───
 
@@ -25,11 +25,27 @@ export interface Catalogs {
 
 // ── Props de componentes ─────────────────────────────────────
 
+export type PracticeFilters = { [Key in keyof FilterState]: number };
+
+export type PracticeText = Pick<Text, 'id' | 'title' | 'content' | keyof FilterState> & {
+  contentHash: string;
+};
+
+export interface PracticeBootstrap {
+  catalogs: Catalogs;
+  filters: PracticeFilters | null;
+  texts: PracticeText[];
+  expiresAt: string;
+}
+
 export interface TypingDisplayProps {
-  filters: FilterState;
+  textData: PracticeText;
+  expiresAt?: number;
   isStarted: boolean;
+  onBegin: () => void;
   onStart: () => void;
   onReset: () => void;
+  onTextUnavailable: () => void;
 }
 
 export interface TextFiltersProps {

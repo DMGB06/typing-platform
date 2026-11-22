@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { FiRotateCcw } from 'react-icons/fi';
-import type { TypingDisplayProps, Text, CreateTypingSessionRequest } from '@/types';
-import { getRandomText } from '@/lib/api/texts';
+import type { TypingDisplayProps, CreateTypingSessionRequest } from '@/types';
 import { ApiError } from '@/lib/api/client';
 import { createTypingSession, startTypingSession } from '@/lib/api/typing-sessions';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,17 +26,17 @@ function measureTyping(input: string[], target: string[], startTime: number) {
  * - Botón de restart
  */
 export const TypingDisplay: React.FC<TypingDisplayProps> = ({
-  filters,
+  textData,
+  expiresAt,
   isStarted,
+  onBegin,
   onStart,
   onReset,
+  onTextUnavailable,
 }) => {
   const { isLoggedIn } = useAuth();
 
   // Estado del texto y tipeo
-  const [textData, setTextData] = useState<Text | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [userInput, setUserInput] = useState<string[]>([]);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [wpm, setWpm] = useState(0);
@@ -60,39 +59,13 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
   const insertions = useRef(0);
   const correctInsertions = useRef(0);
   const target = useMemo(
-    () => Array.from(textData?.content.replace(/\r\n?/g, '\n') ?? ''),
-    [textData],
+    () => Array.from(textData.content.replace(/\r\n?/g, '\n')),
+    [textData.content],
   );
-  const { typeId, difficultyId, languageId } = filters;
-
   useEffect(() => {
-    if (!typeId && !difficultyId && !languageId) return;
-    let cancelled = false;
-
-    const fetchText = async () => {
-      setLoading(true);
-      try {
-        const randomText = await getRandomText({
-          difficultyId: difficultyId ?? undefined,
-          typeId: typeId ?? undefined,
-          languageId: languageId ?? undefined,
-        });
-        if (cancelled) return;
-        setTextData(randomText);
-      } catch {
-        if (!cancelled) setError('Sin resultados para esta combinaci\u00f3n.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    void fetchText();
     const invalidate = () => { generation.current++; };
-    return () => {
-      cancelled = true;
-      invalidate();
-    };
-  }, [typeId, difficultyId, languageId]);
+    return invalidate;
+  }, []);
 
   // Timer
   useEffect(() => {
@@ -108,20 +81,28 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
   }, [isStarted, startTime, target]);
 
   const begin = async () => {
-    if (!textData || !target.length || busy.current || isStarted || finished) return;
+    if (!target.length || busy.current || isStarted || finished) return;
+    onBegin();
+    if (expiresAt !== undefined && Date.now() >= expiresAt) {
+      onTextUnavailable();
+      return;
+    }
     const version = generation.current;
     busy.current = true;
     setStarting(true);
     setSaveError(null);
     try {
-      const attempt = isLoggedIn ? await startTypingSession(textData.id) : null;
+      const attempt = isLoggedIn ? await startTypingSession(textData.id, textData.contentHash) : null;
       if (version !== generation.current) return;
       attemptId.current = attempt?.attemptId ?? null;
       setStartTime(Date.now());
       onStart();
       area.current?.focus();
-    } catch {
-      if (version === generation.current) {
+    } catch (error) {
+      if (version !== generation.current) return;
+      if (error instanceof ApiError && (error.status === 404 || error.status === 409)) {
+        onTextUnavailable();
+      } else {
         setSaveError('No se pudo iniciar el intento. Vuelve a intentarlo.');
       }
     } finally {
@@ -161,7 +142,7 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget || e.ctrlKey || e.altKey || e.metaKey || e.nativeEvent.isComposing) return;
-    if (loading || !textData || finished || input.current.length === target.length) return;
+    if (finished || input.current.length === target.length) return;
 
     const expected = target[input.current.length];
     const key = e.key === 'Enter' && expected === '\n' ? '\n'
@@ -241,125 +222,52 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
         className="rounded-xl p-8 relative focus-within:ring-2 focus-within:ring-(--color-accent) transition-all duration-300"
         style={{ backgroundColor: 'var(--color-bg-secondary)' }}
         ref={area}
-        tabIndex={loading ? -1 : 0}
+        tabIndex={0}
         onKeyDown={handleKeyPress}
       >
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2"
-              style={{ borderColor: 'var(--color-accent)' }}></div>
-            <p className="text-sm mt-4" style={{ color: 'var(--color-text-tertiary)' }}>
-              Cargando texto...
-            </p>
-          </div>
-        )}
-
-        {/* Empty / Error State */}
-        {error && !loading && (
-          <div className="flex flex-col items-center justify-center py-16 px-6">
-            {/* Icono */}
-            <div
-              className="flex items-center justify-center w-16 h-16 rounded-full mb-5"
-              style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
-            >
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ color: 'var(--color-text-tertiary)' }}
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                <line x1="8" y1="11" x2="14" y2="11" />
-              </svg>
-            </div>
-
-            {/* Mensaje */}
-            <p
-              className="text-base font-medium mb-1.5"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              Sin resultados para esta combinación
-            </p>
-            <p
-              className="text-sm mb-6 max-w-xs text-center"
-              style={{ color: 'var(--color-text-tertiary)' }}
-            >
-              No hay textos que coincidan con el tipo, dificultad e idioma seleccionados. Prueba cambiando algún filtro.
-            </p>
-
-            {/* Botón */}
-            <button
-              onClick={() => window.location.reload()}
-              className="
-                px-5 py-2 rounded-lg text-sm font-medium
-                transition-all duration-200 cursor-pointer
-                hover:opacity-90 active:scale-[0.97]
-              "
-              style={{
-                backgroundColor: 'var(--color-bg-tertiary)',
-                color: 'var(--color-text-primary)',
-              }}
-            >
-              Reintentar
+        {!isStarted && !finished && !starting && (
+          <div className="text-center mb-6">
+            <button type="button" onClick={() => void begin()} className="underline">
+              Iniciar
             </button>
           </div>
         )}
+        {starting && <p role="status" className="text-center mb-6">Iniciando...</p>}
 
-        {/* Text Display */}
-        {!loading && !error && (
-          <>
-            {!isStarted && !finished && !starting && textData && (
-              <div className="text-center mb-6">
-                <button type="button" onClick={() => void begin()} className="underline">
-                  Iniciar
-                </button>
-              </div>
-            )}
-            {starting && <p role="status" className="text-center mb-6">Iniciando...</p>}
+        {/* Texto */}
+        <div className="typing-text text-center">
+          {target.map((char, index) => {
+            let charClass = 'char-pending';
 
-            {/* Texto */}
-            <div className="typing-text text-center">
-              {target.map((char, index) => {
-                let charClass = 'char-pending';
+            if (index < userInput.length) {
+              // Ya fue escrito
+              charClass = userInput[index] === char ? 'char-correct' : 'char-incorrect';
+            } else if (index === userInput.length) {
+              // Carácter actual — clase con el pulso animado del cursor
+              charClass = 'char-current';
+            }
 
-                if (index < userInput.length) {
-                  // Ya fue escrito
-                  charClass = userInput[index] === char ? 'char-correct' : 'char-incorrect';
-                } else if (index === userInput.length) {
-                  // Carácter actual — clase con el pulso animado del cursor
-                  charClass = 'char-current';
-                }
+            return (
+              <span key={index} className={charClass}>
+                {char}
+              </span>
+            );
+          })}
+        </div>
 
-                return (
-                  <span key={index} className={charClass}>
-                    {char}
-                  </span>
-                );
-              })}
-            </div>
-
-            {/* Botón Restart */}
-            {(isStarted || starting || finished) && (
-              <div className="absolute top-4 right-4">
-                <button
-                  onClick={handleRestart}
-                  className="flex items-center gap-1.5 text-sm transition-colors duration-200 hover:opacity-70"
-                  style={{ color: 'var(--color-text-tertiary)' }}
-                  title="Reiniciar intento"
-                >
-                  <FiRotateCcw className="w-3.5 h-3.5" />
-                  restart
-                </button>
-              </div>
-            )}
-          </>
+        {/* Botón Restart */}
+        {(isStarted || starting || finished) && (
+          <div className="absolute top-4 right-4">
+            <button
+              onClick={handleRestart}
+              className="flex items-center gap-1.5 text-sm transition-colors duration-200 hover:opacity-70"
+              style={{ color: 'var(--color-text-tertiary)' }}
+              title="Reiniciar intento"
+            >
+              <FiRotateCcw className="w-3.5 h-3.5" />
+              restart
+            </button>
+          </div>
         )}
       </div>
 

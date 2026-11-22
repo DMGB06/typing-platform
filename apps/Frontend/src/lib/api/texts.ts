@@ -10,7 +10,7 @@
  */
 
 import type {
-  Text,
+  PracticeText,
   TextFilters,
   Difficulty,
   TextType,
@@ -33,8 +33,8 @@ function buildQuery(filters: TextFilters): string {
 
 // ── Textos ───────────────────────────────────────────────────
 
-export function getRandomText(filters: TextFilters): Promise<Text> {
-  return apiClient<Text>(`/texts/random${buildQuery(filters)}`);
+export function getRandomText(filters: TextFilters, signal?: AbortSignal): Promise<PracticeText> {
+  return apiClient<PracticeText>(`/texts/random${buildQuery(filters)}`, { signal });
 }
 
 // ── Catálogos (endpoints públicos, sin auth) ─────────────────
